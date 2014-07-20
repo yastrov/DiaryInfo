@@ -21,6 +21,7 @@ namespace DiaryInfo
         private void button1_Click(object sender, EventArgs e)
         {
             d.Invoke(textBox1.Text, textBox2.Text, textBox3.Text);
+            this.Close();
         }
 
         private void button2_Click(object sender, EventArgs e)
