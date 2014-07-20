@@ -14,8 +14,8 @@ namespace DiaryInfo
         private ContextMenu trayMenu;
         private DiaryRuClient client = new DiaryRuClient();
         private Timer myTimer = new Timer();
-        private Icon defaultIcon = null;
-        private Icon attentionIcon = null;
+        private Icon defaultIcon = Resource.Icon1;
+        private Icon attentionIcon = Resource.Icon2;
 
         /// <summary>
         /// Event Handler for Timer
@@ -113,26 +113,7 @@ namespace DiaryInfo
             trayIcon.ContextMenu = trayMenu;
             trayIcon.Visible = true;
             myTimer.Tick += new EventHandler(TimerEventProcessor);
-            
-            try
-            {
-                defaultIcon = new Icon("..\\..\\Images\\Icon1.ico");
-            }
-            catch (System.IO.FileNotFoundException e)
-            {
-                MessageBox.Show(e.Message);
-                defaultIcon = new Icon(this.GetType(), "Icon1.ico"); ;
-            }
             SetDefaultIcon();
-            try
-            {
-                attentionIcon = new Icon("..\\..\\Images\\Icon2.ico");
-            }
-            catch (System.IO.FileNotFoundException e)
-            {
-                MessageBox.Show(e.Message);
-                attentionIcon = new Icon(this.GetType(), "Icon2.ico"); ;
-            }
         }
 
         public MyTrayIcon()
