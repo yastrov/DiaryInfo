@@ -21,13 +21,12 @@ namespace DiaryInfo
         private void button1_Click(object sender, EventArgs e)
         {
             d.Invoke(textBox1.Text, textBox2.Text, textBox3.Text);
-            
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
-            Application.Exit();
             this.Close();
+            Application.Exit();
         }
 
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
