@@ -21,6 +21,7 @@ namespace DiaryInfo
 
         private void button1_Click(object sender, EventArgs e)
         {
+            Visible = false;
             d.Invoke(textBox1.Text, textBox2.Text, textBox3.Text);
             closedWithSendData = true;
             this.Close();
