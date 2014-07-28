@@ -112,7 +112,7 @@ namespace DiaryInfo
         /// <param name="url">url</param>
         /// <param name="requestMethod">GET or POST or smth</param>
         /// <param name="content">byte array content</param>
-        /// <returns>HttpWebResponse response object</returns>
+        /// <returns>Response object</returns>
         private HttpWebResponse _Request(String url, String requestMethod, byte[] content)
         {
             HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url);
@@ -136,14 +136,7 @@ namespace DiaryInfo
             }
             HttpWebResponse response = (HttpWebResponse)request.GetResponse();
             request = null;
-
             this._BugFix_CookieDomain(this._cookies);
-
-            if (!String.IsNullOrEmpty(response.Headers[HttpResponseHeader.Location]))
-            {
-                String location = response.Headers[HttpResponseHeader.Location];
-                //this._Request(location);
-            }
             return response;
         }
         /// <summary>
@@ -202,16 +195,14 @@ namespace DiaryInfo
         /// <param name="user">User name, login</param>
         /// <param name="password">password</param>
         public void Auth(string user, string password) {
-            HttpWebResponse response = this._Request(URL_MAIN, "GET", null);
-            response.Close();
+            using (HttpWebResponse response = this._Request(URL_MAIN, "GET", null)) ;
             Dictionary<string, string> map = new Dictionary<string, string>();
             //NameValueCollection map = new NameValueCollection();
             map.Add("user_login", user);
             map.Add("user_pass", password);
             map.Add("save", "on");
             byte[] data = EncodeValues(map);
-            response = this._Request(URL_LOGIN, "POST", data);
-            response.Close();
+            using(HttpWebResponse response = this._Request(URL_LOGIN, "POST", data) )  ;
         }
 
         /// <summary>
@@ -220,12 +211,22 @@ namespace DiaryInfo
         /// <returns></returns>
         public DiaryRuInfo GetInfo()
         {
-            HttpWebResponse response = this._Request(URL_INFO, "GET", null);
-            Stream myStream = response.GetResponseStream();
-            DataContractJsonSerializer json = new DataContractJsonSerializer(typeof(DiaryRuInfo));
-            DiaryRuInfo info = (DiaryRuInfo)json.ReadObject(myStream);
-            myStream.Close();
-            response.Close();
+            DiaryRuInfo info = null;
+            using (HttpWebResponse response = this._Request(URL_INFO, "GET", null))
+            {
+                DataContractJsonSerializer json = new DataContractJsonSerializer(typeof(DiaryRuInfo));
+                using (Stream oStream = response.GetResponseStream())
+                {
+                    try
+                    {
+                        info = (DiaryRuInfo)json.ReadObject(oStream);
+                    }
+                    catch (Exception e)
+                    {
+                        info = null;
+                    }
+                }
+            }
             return info;
         }
     }
