@@ -12,6 +12,7 @@ namespace DiaryInfo
     public partial class AuthForm : Form
     {
         private OptionsHandlerDelegate d;
+        bool closedWithSendData = false;
         public AuthForm(OptionsHandlerDelegate sender)
         {
             InitializeComponent();
@@ -21,6 +22,7 @@ namespace DiaryInfo
         private void button1_Click(object sender, EventArgs e)
         {
             d.Invoke(textBox1.Text, textBox2.Text, textBox3.Text);
+            closedWithSendData = true;
             this.Close();
         }
 
@@ -44,10 +46,20 @@ namespace DiaryInfo
 
         private void AuthForm_Load(object sender, EventArgs e)
         {
+            this.Select();
+            this.ActiveControl = textBox1;
+            textBox1.Focus();
+            textBox1.Select();
             ShowInTaskbar = false;
             StringBuilder sb = new StringBuilder();
             sb.Append("Author: Yuri Astrov\n").Append("Version: ").Append(typeof(AuthForm).Assembly.GetName().Version.ToString());
             label5.Text = sb.ToString();
+        }
+
+        private void AuthForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            if (!closedWithSendData)
+                Application.Exit();
         }
     }
 }

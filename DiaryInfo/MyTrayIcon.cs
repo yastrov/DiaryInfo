@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Diagnostics;
 using System.Reflection;
 using System.ComponentModel;
+using System.Net;
 
 namespace DiaryInfo
 {
@@ -114,7 +115,7 @@ namespace DiaryInfo
                                 MessageBox.Show("Stopped by user.");
                              else if (e.Error != null)
                              {
-                                MessageBox.Show(e.Error.ToString());
+                                MessageBox.Show(e.Error.Message);
                                 SetDefaultIcon();
                              }
                              else
@@ -187,9 +188,16 @@ namespace DiaryInfo
         /// <param name="password"></param>
         /// <param name="timeout"></param>
         private void ReceiveAuthData(string user, string password, string timeout) {
-            this.client.Auth(user, password);
-            DoRequest();
-            StartTimer(Convert.ToInt32(timeout));
+            try
+            {
+                this.client.Auth(user, password);
+                DoRequest();
+                StartTimer(Convert.ToInt32(timeout));
+            }
+            catch (WebException e) {
+                MessageBox.Show(e.Message);
+                MessageBox.Show("Application is disabled. You can Authorize from menu in system tray, or exit from application.");
+            }  
         }
 
         /// <summary>
