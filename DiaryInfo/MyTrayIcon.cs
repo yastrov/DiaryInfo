@@ -3,6 +3,7 @@ using System.Windows.Forms;
 using System.Drawing;
 using System.Diagnostics;
 using System.Reflection;
+using System.ComponentModel;
 
 namespace DiaryInfo
 {
@@ -16,6 +17,8 @@ namespace DiaryInfo
         private Timer myTimer = new Timer();
         private Icon defaultIcon = Resource.Icon1;
         private Icon attentionIcon = Resource.Icon2;
+        private BackgroundWorker backWorker = null;
+        private const int BALOON_TIP_SHOW_DELAY = 5 * 1000;
 
         /// <summary>
         /// Event Handler for Timer
@@ -43,31 +46,8 @@ namespace DiaryInfo
         /// </summary>
         private void DoRequest() 
         {
-            try
-            {
-                DiaryRuInfo data = this.client.GetInfo();
-                string sdata = data.ToString();
-                if (data.HasError())
-                {
-                    MessageBox.Show(sdata);
-                }
-                trayIcon.BalloonTipText = sdata;
-                trayIcon.ShowBalloonTip(5 * 1000);
-                trayIcon.Text = sdata;
-                if (data.IsEmpty())
-                {
-                    SetDefaultIcon();
-                }
-                else
-                {
-                    SetAttentionIcon();
-                }
-            }
-            catch (Exception e)
-            {
-                MessageBox.Show(e.Message);
-                SetDefaultIcon();
-            }
+            if (!backWorker.IsBusy)
+                backWorker.RunWorkerAsync(client);
         }
 
         /// <summary>
@@ -119,6 +99,44 @@ namespace DiaryInfo
         public MyTrayIcon()
         {
             CreateIconAndMenu();
+            backWorker = new BackgroundWorker();
+            backWorker.WorkerReportsProgress = true;
+            backWorker.WorkerSupportsCancellation = true;
+            backWorker.DoWork += (object sender, DoWorkEventArgs e) =>
+            {
+                DiaryRuClient c = e.Argument as DiaryRuClient;
+                DiaryRuInfo data = c.GetInfo();
+                e.Result = data;
+            };
+            backWorker.RunWorkerCompleted += (object sender,
+                             RunWorkerCompletedEventArgs e) => {
+                             if (e.Cancelled)
+                                MessageBox.Show("Stopped by user.");
+                             else if (e.Error != null)
+                             {
+                                MessageBox.Show(e.Error.ToString());
+                                SetDefaultIcon();
+                             }
+                             else
+                             {
+                                DiaryRuInfo data = e.Result as DiaryRuInfo;
+                                if (data == null) {
+                                    SetDefaultIcon();
+                                    return;
+                                }
+                                string sdata = data.ToString();
+                                if (data.HasError())
+                                    MessageBox.Show(sdata);
+                                trayIcon.BalloonTipText = sdata;
+                                trayIcon.ShowBalloonTip(BALOON_TIP_SHOW_DELAY);
+                                trayIcon.Text = sdata;
+                                if (data.IsEmpty()) {
+                                    SetDefaultIcon();
+                                } else {
+                                    SetAttentionIcon();
+                                }
+                            }
+                    };
         }
  
         protected override void OnLoad(EventArgs e)
@@ -132,6 +150,8 @@ namespace DiaryInfo
         private void OnExit(object sender, EventArgs e)
         {
             myTimer.Stop();
+            if (backWorker.IsBusy)
+                backWorker.CancelAsync();
             this.Close();
         }
 
@@ -143,6 +163,8 @@ namespace DiaryInfo
         private void OnAuth(object sender, EventArgs e)
         {
             myTimer.Stop();
+            if (backWorker.IsBusy)
+                backWorker.CancelAsync();
             AuthForm form = new AuthForm(new OptionsHandlerDelegate(ReceiveAuthData));
             form.Show();
         }
@@ -228,9 +250,9 @@ namespace DiaryInfo
         {
             if (isDisposing)
             {
-                // Release the icon resource.
                 trayIcon.Dispose();
                 myTimer.Dispose();
+                backWorker.Dispose();
             }
  
             base.Dispose(isDisposing);
