@@ -45,6 +45,9 @@ namespace DiaryInfo
         private void AuthForm_Load(object sender, EventArgs e)
         {
             ShowInTaskbar = false;
+            StringBuilder sb = new StringBuilder();
+            sb.Append("Author: Yuri Astrov\n").Append("Version: ").Append(typeof(AuthForm).Assembly.GetName().Version.ToString());
+            label5.Text = sb.ToString();
         }
     }
 }
