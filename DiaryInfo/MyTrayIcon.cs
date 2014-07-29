@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.ComponentModel;
 using System.Net;
+using System.Text;
 
 namespace DiaryInfo
 {
@@ -89,7 +90,6 @@ namespace DiaryInfo
             trayIcon = new NotifyIcon();
             trayIcon.Text = "DiaryInfo";
             trayIcon.MouseClick += new MouseEventHandler(trayIconMouseClick);
-            trayIcon.MouseUp += new MouseEventHandler(trayIconMouseUpClick);
             // Add menu to tray icon and show it.
             trayIcon.ContextMenu = trayMenu;
             trayIcon.Visible = true;
@@ -105,9 +105,7 @@ namespace DiaryInfo
             backWorker.WorkerSupportsCancellation = true;
             backWorker.DoWork += (object sender, DoWorkEventArgs e) =>
             {
-                DiaryRuClient c = e.Argument as DiaryRuClient;
-                DiaryRuInfo data = c.GetInfo();
-                e.Result = data;
+                e.Result = ((DiaryRuClient)e.Argument).GetInfo();
             };
             backWorker.RunWorkerCompleted += (object sender,
                              RunWorkerCompletedEventArgs e) => {
@@ -120,9 +118,11 @@ namespace DiaryInfo
                              }
                              else
                              {
-                                DiaryRuInfo data = e.Result as DiaryRuInfo;
+                                /*Last approach with 'as' is bad idea for Exceptions*/
+                                DiaryRuInfo data = (DiaryRuInfo)e.Result;
                                 if (data == null) {
                                     SetDefaultIcon();
+                                    MessageBox.Show("Can't decode response from remote server.");
                                     return;
                                 }
                                 string sdata = data.ToString();
@@ -195,19 +195,11 @@ namespace DiaryInfo
                 StartTimer(Convert.ToInt32(timeout));
             }
             catch (WebException e) {
-                MessageBox.Show(e.Message);
-                MessageBox.Show("Application is disabled. You can Authorize from menu in system tray, or exit from application.");
+                StringBuilder sb = new StringBuilder();
+                sb.Append("Application is disabled. You can Authorize from menu in system tray, or exit from application.")
+                .Append("\n").Append(e.Message);
+                MessageBox.Show(sb.ToString());
             }  
-        }
-
-        /// <summary>
-        /// NotifyIcon Mouse Up Event Handler
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void trayIconMouseUpClick(object sender, MouseEventArgs e)
-        {
-            ;
         }
 
         /// <summary>

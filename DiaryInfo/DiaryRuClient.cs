@@ -80,7 +80,7 @@ namespace DiaryInfo
         }
 
         /// <summary>
-        /// Has Error
+        /// Has Error string in Response from remote server.
         /// </summary>
         /// <returns></returns>
         public bool HasError() {
@@ -113,7 +113,7 @@ namespace DiaryInfo
         /// <param name="requestMethod">GET or POST or smth</param>
         /// <param name="content">byte array content</param>
         /// <returns>Response object</returns>
-        private HttpWebResponse _Request(String url, String requestMethod, byte[] content)
+        protected HttpWebResponse _Request(String url, String requestMethod, byte[] content)
         {
             HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url);
             request.ProtocolVersion = new Version(1, 0);
@@ -137,6 +137,7 @@ namespace DiaryInfo
             HttpWebResponse response = (HttpWebResponse)request.GetResponse();
             request = null;
             this._BugFix_CookieDomain(this._cookies);
+            this._referer = url;
             return response;
         }
         /// <summary>
@@ -170,7 +171,7 @@ namespace DiaryInfo
         /// </summary>
         /// <param name="_formValues"></param>
         /// <returns></returns>
-        private static byte[] EncodeValues(Dictionary<string, string> _formValues)
+        public static byte[] EncodeValues(Dictionary<string, string> _formValues)
         {
             StringBuilder postString = new StringBuilder();
             bool first=true;
@@ -182,7 +183,6 @@ namespace DiaryInfo
                     postString.Append("&");
                 postString.AppendFormat("{0}={1}", pair.Key, pair.Value);
             }
-           
             Encoding encoding = Encoding.GetEncoding("Windows-1251");
             HttpUtility.UrlEncode(postString.ToString(),  encoding);
             byte[] postBytes = encoding.GetBytes(postString.ToString());
