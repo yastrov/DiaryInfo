@@ -6,6 +6,7 @@ using System.Reflection;
 using System.ComponentModel;
 using System.Net;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace DiaryInfo
 {
@@ -19,7 +20,6 @@ namespace DiaryInfo
         private Timer myTimer = new Timer();
         private Icon defaultIcon = Resource.Icon1;
         private Icon attentionIcon = Resource.Icon2;
-        private BackgroundWorker backWorker = null;
         private const int BALOON_TIP_SHOW_DELAY = 5 * 1000;
 
         /// <summary>
@@ -27,9 +27,9 @@ namespace DiaryInfo
         /// </summary>
         /// <param name="myObject"></param>
         /// <param name="myEventArgs"></param>
-        private void TimerEventProcessor(Object myObject, EventArgs myEventArgs) {
+        async private void TimerEventProcessor(Object myObject, EventArgs myEventArgs) {
             myTimer.Stop();
-            DoRequest();
+            await DoRequestAsync();
             myTimer.Enabled = true;
         }
 
@@ -46,10 +46,45 @@ namespace DiaryInfo
         /// <summary>
         /// Do request with DiaryRu Client
         /// </summary>
-        private void DoRequest() 
+        async private Task DoRequestAsync() 
         {
-            if (!backWorker.IsBusy)
-                backWorker.RunWorkerAsync(client);
+            //DiaryRuInfo data = await client.GetInfoAsync();
+            var awaiter = client.GetInfoAsync().GetAwaiter();
+            awaiter.OnCompleted(() =>
+                {
+                    try
+                    {
+                        /*Last approach with 'as' is bad idea for Exceptions*/
+                        DiaryRuInfo data = (DiaryRuInfo)awaiter.GetResult();
+                        if (data == null)
+                        {
+                            SetDefaultIcon();
+                            trayIcon.Text = "Can't decode response from remote server.";
+                            MessageBox.Show("Can't decode response from remote server.");
+                            return;
+                        }
+                        string sdata = data.ToString();
+                        if (data.HasError())
+                            MessageBox.Show(sdata);
+                        trayIcon.BalloonTipText = sdata;
+                        trayIcon.ShowBalloonTip(BALOON_TIP_SHOW_DELAY);
+                        trayIcon.Text = sdata;
+                        if (data.IsEmpty())
+                        {
+                            SetDefaultIcon();
+                        }
+                        else
+                        {
+                            SetAttentionIcon();
+                        }
+                    }
+                    catch (Exception e) {
+                        MessageBox.Show(e.Message);
+                        SetDefaultIcon();
+                        trayIcon.Text = e.Message;
+                    }
+                }
+            );
         }
 
         /// <summary>
@@ -100,44 +135,6 @@ namespace DiaryInfo
         public MyTrayIcon()
         {
             CreateIconAndMenu();
-            backWorker = new BackgroundWorker();
-            backWorker.WorkerReportsProgress = true;
-            backWorker.WorkerSupportsCancellation = true;
-            backWorker.DoWork += (object sender, DoWorkEventArgs e) =>
-            {
-                e.Result = ((DiaryRuClient)e.Argument).GetInfo();
-            };
-            backWorker.RunWorkerCompleted += (object sender,
-                             RunWorkerCompletedEventArgs e) => {
-                             if (e.Cancelled)
-                                MessageBox.Show("Stopped by user.");
-                             else if (e.Error != null)
-                             {
-                                MessageBox.Show(e.Error.Message);
-                                SetDefaultIcon();
-                             }
-                             else
-                             {
-                                /*Last approach with 'as' is bad idea for Exceptions*/
-                                DiaryRuInfo data = (DiaryRuInfo)e.Result;
-                                if (data == null) {
-                                    SetDefaultIcon();
-                                    MessageBox.Show("Can't decode response from remote server.");
-                                    return;
-                                }
-                                string sdata = data.ToString();
-                                if (data.HasError())
-                                    MessageBox.Show(sdata);
-                                trayIcon.BalloonTipText = sdata;
-                                trayIcon.ShowBalloonTip(BALOON_TIP_SHOW_DELAY);
-                                trayIcon.Text = sdata;
-                                if (data.IsEmpty()) {
-                                    SetDefaultIcon();
-                                } else {
-                                    SetAttentionIcon();
-                                }
-                            }
-                    };
         }
  
         protected override void OnLoad(EventArgs e)
@@ -151,8 +148,6 @@ namespace DiaryInfo
         private void OnExit(object sender, EventArgs e)
         {
             myTimer.Stop();
-            if (backWorker.IsBusy)
-                backWorker.CancelAsync();
             this.Close();
         }
 
@@ -164,8 +159,6 @@ namespace DiaryInfo
         private void OnAuth(object sender, EventArgs e)
         {
             myTimer.Stop();
-            if (backWorker.IsBusy)
-                backWorker.CancelAsync();
             AuthForm form = new AuthForm(new OptionsHandlerDelegate(ReceiveAuthData));
             form.Show();
         }
@@ -175,9 +168,9 @@ namespace DiaryInfo
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void OnCheckManually(object sender, EventArgs e) {
+        async private void OnCheckManually(object sender, EventArgs e) {
             myTimer.Stop();
-            DoRequest();
+            await DoRequestAsync();
             myTimer.Start();
         }
         
@@ -187,11 +180,11 @@ namespace DiaryInfo
         /// <param name="user"></param>
         /// <param name="password"></param>
         /// <param name="timeout"></param>
-        private void ReceiveAuthData(string user, string password, string timeout) {
+        async private void ReceiveAuthData(string user, string password, string timeout) {
             try
             {
-                this.client.Auth(user, password);
-                DoRequest();
+                await this.client.AuthAsync(user, password);
+                await DoRequestAsync();
                 StartTimer(Convert.ToInt32(timeout));
             }
             catch (WebException e) {
@@ -252,9 +245,7 @@ namespace DiaryInfo
             {
                 trayIcon.Dispose();
                 myTimer.Dispose();
-                backWorker.Dispose();
             }
- 
             base.Dispose(isDisposing);
         }
     }

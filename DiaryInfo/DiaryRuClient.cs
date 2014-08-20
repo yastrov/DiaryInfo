@@ -6,6 +6,7 @@ using System.Net;
 using System.IO;
 using System.Runtime.Serialization.Json;
 using System.Runtime.Serialization;
+using System.Threading.Tasks;
 
 namespace DiaryInfo
 {
@@ -140,6 +141,42 @@ namespace DiaryInfo
             this._referer = url;
             return response;
         }
+
+        /// <summary>
+        /// Do Abstract Request.
+        /// </summary>
+        /// <param name="url">url</param>
+        /// <param name="requestMethod">GET or POST or smth</param>
+        /// <param name="content">byte array content</param>
+        /// <returns>Response object</returns>
+        async protected Task<HttpWebResponse> _GetRequestAsync(String url, String requestMethod, byte[] content)
+        {
+            HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(url);
+            request.ProtocolVersion = new Version(1, 0);
+            request.Method = requestMethod;
+            if (!String.IsNullOrEmpty(this._referer))
+                request.Referer = this._referer;
+
+            request.AllowAutoRedirect = false;
+            request.UserAgent = "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11";
+            request.Headers.Add(HttpRequestHeader.AcceptCharset, "windows-1251,utf-8;q=0.7,*;q=0.3");
+            request.CookieContainer = this._cookies;
+            if (content != null)
+            {
+                request.ContentType = "application/x-www-form-urlencoded; charset=windows-1251";
+                request.ContentLength = content.LongLength;
+                using (Stream newStream = await request.GetRequestStreamAsync())
+                {
+                    newStream.Write(content, 0, content.Length);
+                }
+            }
+            HttpWebResponse response = (HttpWebResponse) await request.GetResponseAsync();
+            request = null;
+            this._BugFix_CookieDomain(this._cookies);
+            this._referer = url;
+            return response;
+        }
+
         /// <summary>
         /// Bug fix for Cookie processing in .NET Framework.
         /// </summary>
@@ -206,6 +243,23 @@ namespace DiaryInfo
         }
 
         /// <summary>
+        /// Auth to Diary.Ru site.
+        /// </summary>
+        /// <param name="user">User name, login</param>
+        /// <param name="password">password</param>
+        async public Task AuthAsync(string user, string password)
+        {
+            using (HttpWebResponse response = await this._GetRequestAsync(URL_MAIN, "GET", null)) ;
+            Dictionary<string, string> map = new Dictionary<string, string>();
+            //NameValueCollection map = new NameValueCollection();
+            map.Add("user_login", user);
+            map.Add("user_pass", password);
+            map.Add("save", "on");
+            byte[] data = EncodeValues(map);
+            using (HttpWebResponse response = await this._GetRequestAsync(URL_LOGIN, "POST", data)) ;
+        }
+
+        /// <summary>
         /// Get info for Diary.Ru: New comments and other information.
         /// </summary>
         /// <returns></returns>
@@ -213,6 +267,31 @@ namespace DiaryInfo
         {
             DiaryRuInfo info = null;
             using (HttpWebResponse response = this._Request(URL_INFO, "GET", null))
+            {
+                DataContractJsonSerializer json = new DataContractJsonSerializer(typeof(DiaryRuInfo));
+                using (Stream oStream = response.GetResponseStream())
+                {
+                    try
+                    {
+                        info = (DiaryRuInfo)json.ReadObject(oStream);
+                    }
+                    catch (Exception e)
+                    {
+                        info = null;
+                    }
+                }
+            }
+            return info;
+        }
+
+        /// <summary>
+        /// Get info for Diary.Ru: New comments and other information.
+        /// </summary>
+        /// <returns></returns>
+        async public Task<DiaryRuInfo> GetInfoAsync()
+        {
+            DiaryRuInfo info = null;
+            using (HttpWebResponse response = await this._GetRequestAsync(URL_INFO, "GET", null))
             {
                 DataContractJsonSerializer json = new DataContractJsonSerializer(typeof(DiaryRuInfo));
                 using (Stream oStream = response.GetResponseStream())
