@@ -3,7 +3,6 @@ using System.Windows.Forms;
 using System.Drawing;
 using System.Diagnostics;
 using System.Reflection;
-using System.ComponentModel;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
@@ -27,7 +26,7 @@ namespace DiaryInfo
         /// </summary>
         /// <param name="myObject"></param>
         /// <param name="myEventArgs"></param>
-        async private void TimerEventProcessor(Object myObject, EventArgs myEventArgs) {
+        private async void TimerEventProcessor(Object myObject, EventArgs myEventArgs) {
             myTimer.Stop();
             await DoRequestAsync();
             myTimer.Enabled = true;
@@ -46,7 +45,7 @@ namespace DiaryInfo
         /// <summary>
         /// Do request with DiaryRu Client
         /// </summary>
-        async private Task DoRequestAsync() 
+        private async Task DoRequestAsync() 
         {
             //DiaryRuInfo data = await client.GetInfoAsync();
             var awaiter = client.GetInfoAsync().GetAwaiter();
@@ -168,7 +167,7 @@ namespace DiaryInfo
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        async private void OnCheckManually(object sender, EventArgs e) {
+        private async void OnCheckManually(object sender, EventArgs e) {
             myTimer.Stop();
             await DoRequestAsync();
             myTimer.Start();
@@ -180,7 +179,7 @@ namespace DiaryInfo
         /// <param name="user"></param>
         /// <param name="password"></param>
         /// <param name="timeout"></param>
-        async private void ReceiveAuthData(string user, string password, string timeout) {
+        private async void ReceiveAuthData(string user, string password, string timeout) {
             try
             {
                 await this.client.AuthAsync(user, password);
