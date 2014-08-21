@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiaryInfo", "DiaryInfo\DiaryInfo.csproj", "{4ABCA21B-8AC9-455B-B747-20709DAE74CD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4ABCA21B-8AC9-455B-B747-20709DAE74CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4ABCA21B-8AC9-455B-B747-20709DAE74CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4ABCA21B-8AC9-455B-B747-20709DAE74CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4ABCA21B-8AC9-455B-B747-20709DAE74CD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
