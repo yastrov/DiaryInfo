@@ -49,7 +49,7 @@ namespace DiaryInfo
             usernameTextBox.Focus();
 
             StringBuilder sb = new StringBuilder();
-            sb.Append("Author: Yuri Astrov\n").Append("Version: ").Append(typeof(MainWindow).Assembly.GetName().Version.ToString());
+            sb.AppendLine("Author: Yuri Astrov").Append("Version: ").Append(typeof(MainWindow).Assembly.GetName().Version.ToString());
             AuthorLabel.Content = sb.ToString();
         }
 
