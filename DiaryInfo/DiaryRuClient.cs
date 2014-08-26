@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 namespace DiaryInfo
 {
     // Classes for JSON parsing.
+    // Many classes for future.
     [DataContract]
     public class NewComments
     {
@@ -18,7 +19,7 @@ namespace DiaryInfo
         public int Count { get; set; }
     }
     [DataContract]
-    public struct Ddiscuss
+    public struct Discuss
     {
         [DataMember(Name = "count")]
         public int Count { get; set; }
@@ -46,7 +47,7 @@ namespace DiaryInfo
         [DataMember(Name = "newcomments")]
         public NewComments NewComments { get; set; }
         [DataMember(Name = "discuss")]
-        public Ddiscuss Discuss { get; set; }
+        public Discuss Discuss { get; set; }
         [DataMember(Name = "umails")]
         public Umails Umails  { get; set; }
         [DataMember(Name = "userinfo")]
