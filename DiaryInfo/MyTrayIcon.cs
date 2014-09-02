@@ -15,8 +15,8 @@ namespace DiaryInfo
     {
         private NotifyIcon  trayIcon;
         private ContextMenu trayMenu;
-        private DiaryRuClient client = new DiaryRuClient();
-        private Timer myTimer = new Timer();
+        private DiaryRuClient client = null;
+        private Timer myTimer = null;
         private Icon defaultIcon = Resource.Icon1;
         private Icon attentionIcon = Resource.Icon2;
         private const int BALOON_TIP_SHOW_DELAY = 5 * 1000;
@@ -47,43 +47,38 @@ namespace DiaryInfo
         /// </summary>
         private async Task DoRequestAsync() 
         {
-            //DiaryRuInfo data = await client.GetInfoAsync();
-            var awaiter = client.GetInfoAsync().GetAwaiter();
-            awaiter.OnCompleted(() =>
-                {
-                    try
-                    {
-                        /*Last approach with 'as' is bad idea for Exceptions*/
-                        DiaryRuInfo data = (DiaryRuInfo)awaiter.GetResult();
-                        if (data == null)
-                        {
-                            SetDefaultIcon();
-                            trayIcon.Text = "Can't decode response from remote server.";
-                            MessageBox.Show("Can't decode response from remote server.");
-                            return;
-                        }
-                        string sdata = data.ToString();
-                        if (data.HasError())
-                            MessageBox.Show(sdata);
-                        trayIcon.Text = sdata;
-                        if (data.IsEmpty())
-                        {
-                            SetDefaultIcon();
-                        }
-                        else
-                        {
-                            trayIcon.BalloonTipText = sdata;
-                            trayIcon.ShowBalloonTip(BALOON_TIP_SHOW_DELAY);
-                            SetAttentionIcon();
-                        }
-                    }
-                    catch (Exception e) {
-                        MessageBox.Show(e.Message);
-                        SetDefaultIcon();
-                        trayIcon.Text = e.Message;
-                    }
+            try {
+                DiaryRuInfo data = await client.GetInfoAsync();
+                if (data == null) {
+                    SetDefaultIcon();
+                    trayIcon.Text = "Can't decode response from remote server.";
+                    MessageBox.Show("Can't decode response from remote server.");
+                    return;
                 }
-            );
+                string sdata = data.ToString();
+                if (data.HasError())
+                    MessageBox.Show(sdata);
+                trayIcon.Text = sdata;
+                if (data.IsEmpty()) {
+                    SetDefaultIcon();
+                }
+                else {
+                    trayIcon.BalloonTipText = sdata;
+                    trayIcon.ShowBalloonTip(BALOON_TIP_SHOW_DELAY);
+                    SetAttentionIcon();
+                }
+            }
+            catch (WebException e) {
+                MessageBox.Show(e.Message);
+                SetDefaultIcon();
+                trayIcon.Text = e.Message;
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.ToString());
+                myTimer.Stop();
+                this.Close();
+            }
         }
 
         /// <summary>
@@ -133,20 +128,23 @@ namespace DiaryInfo
 
         public MyTrayIcon()
         {
-            CreateIconAndMenu();
+            ;
         }
  
         protected override void OnLoad(EventArgs e)
         {
             Visible       = false; // Hide form window.
             ShowInTaskbar = false; // Remove from taskbar.
+            client = new DiaryRuClient();
+            myTimer = new Timer();
             base.OnLoad(e);
+            CreateIconAndMenu();
             OnAuth(null, null);
         }
  
         private void OnExit(object sender, EventArgs e)
         {
-            myTimer.Stop();
+            if(myTimer != null) myTimer.Stop();
             this.Close();
         }
 
@@ -207,7 +205,7 @@ namespace DiaryInfo
                 mi.Invoke(trayIcon, null);
             }
         }
-
+        
         /// <summary>
         /// Read Umails ContextMenu event handler
         /// </summary>
@@ -237,13 +235,16 @@ namespace DiaryInfo
         {
             Process.Start("http://diary.ru/?favorite");
         }
-        
+
         protected override void Dispose(bool isDisposing)
         {
             if (isDisposing)
             {
-                trayIcon.Dispose();
-                myTimer.Dispose();
+                if (myTimer != null) myTimer.Dispose();
+                if(defaultIcon != null) defaultIcon.Dispose();
+                if(attentionIcon != null) attentionIcon.Dispose();
+                if(trayMenu != null) trayMenu.Dispose();
+                if(trayIcon != null) trayIcon.Dispose();
             }
             base.Dispose(isDisposing);
         }
