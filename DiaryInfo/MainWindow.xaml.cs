@@ -220,8 +220,6 @@ namespace DiaryInfo
                     string sdata = data.ToString();
                     if (data.HasError())
                         System.Windows.MessageBox.Show(sdata);
-                    trayIcon.BalloonTipText = sdata;
-                    trayIcon.ShowBalloonTip(BALOON_TIP_SHOW_DELAY);
                     trayIcon.Text = sdata;
                     if (data.IsEmpty())
                     {
@@ -229,6 +227,8 @@ namespace DiaryInfo
                     }
                     else
                     {
+                        trayIcon.BalloonTipText = sdata;
+                        trayIcon.ShowBalloonTip(BALOON_TIP_SHOW_DELAY);
                         SetAttentionIcon();
                     }
                 }
