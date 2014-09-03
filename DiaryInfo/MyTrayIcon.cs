@@ -112,6 +112,7 @@ namespace DiaryInfo
             trayMenu.MenuItems.Add("-");
             trayMenu.MenuItems.Add("Check manually", OnCheckManually);
             trayMenu.MenuItems.Add("Authorize", OnAuth);
+            trayMenu.MenuItems.Add("About", OnAboutClick);
             trayMenu.MenuItems.Add("Exit", OnExit);
             // Create a tray icon. In this example we use a
             // standard system icon for simplicity, but you
@@ -234,6 +235,11 @@ namespace DiaryInfo
         private void OnReadFavorite(object sender, EventArgs e)
         {
             Process.Start("http://diary.ru/?favorite");
+        }
+
+        private void OnAboutClick(object sender, EventArgs e)
+        {
+            new AboutWindow().Show();
         }
 
         protected override void Dispose(bool isDisposing)
