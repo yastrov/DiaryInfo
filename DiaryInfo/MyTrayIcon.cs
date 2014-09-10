@@ -159,6 +159,7 @@ namespace DiaryInfo
         {
             myTimer.Stop();
             AuthForm form = new AuthForm(new OptionsHandlerDelegate(ReceiveAuthData));
+            form.StartPosition = FormStartPosition.CenterScreen;
             form.Show();
         }
 
