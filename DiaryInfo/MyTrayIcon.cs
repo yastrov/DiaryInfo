@@ -71,7 +71,8 @@ namespace DiaryInfo
             catch (WebException e) {
                 MessageBox.Show(e.Message);
                 SetDefaultIcon();
-                trayIcon.Text = e.Message;
+                // String length must be < 64
+                trayIcon.Text = "Exception: Can't receive response from remote server.";
             }
             catch (Exception e)
             {
