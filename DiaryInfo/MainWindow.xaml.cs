@@ -202,44 +202,44 @@ namespace DiaryInfo
         /// </summary>
         private async Task DoRequestAsync()
         {
-            //DiaryRuInfo data = await client.GetInfoAsync();
-            var awaiter = client.GetInfoAsync().GetAwaiter();
-            awaiter.OnCompleted(() =>
+            try
             {
-                try
+                DiaryRuInfo data = await client.GetInfoAsync();
+                if (data == null)
                 {
-                    /*Last approach with 'as' is bad idea for Exceptions*/
-                    DiaryRuInfo data = (DiaryRuInfo)awaiter.GetResult();
-                    if (data == null)
-                    {
-                        SetDefaultIcon();
-                        trayIcon.Text = "Can't decode response from remote server.";
-                        System.Windows.MessageBox.Show("Can't decode response from remote server.");
-                        return;
-                    }
-                    string sdata = data.ToString();
-                    if (data.HasError())
-                        System.Windows.MessageBox.Show(sdata);
-                    trayIcon.Text = sdata;
-                    if (data.IsEmpty())
-                    {
-                        SetDefaultIcon();
-                    }
-                    else
-                    {
-                        trayIcon.BalloonTipText = sdata;
-                        trayIcon.ShowBalloonTip(BALOON_TIP_SHOW_DELAY);
-                        SetAttentionIcon();
-                    }
-                }
-                catch (Exception e)
-                {
-                    System.Windows.MessageBox.Show(e.Message);
                     SetDefaultIcon();
-                    trayIcon.Text = e.Message;
+                    trayIcon.Text = "Can't decode response from remote server.";
+                    System.Windows.Forms.MessageBox.Show("Can't decode response from remote server.");
+                    return;
+                }
+                string sdata = data.ToString();
+                if (data.HasError())
+                    System.Windows.Forms.MessageBox.Show(sdata);
+                trayIcon.Text = sdata;
+                if (data.IsEmpty())
+                {
+                    SetDefaultIcon();
+                }
+                else
+                {
+                    trayIcon.BalloonTipText = sdata;
+                    trayIcon.ShowBalloonTip(BALOON_TIP_SHOW_DELAY);
+                    SetAttentionIcon();
                 }
             }
-            );
+            catch (WebException e)
+            {
+                System.Windows.MessageBox.Show(e.Message);
+                SetDefaultIcon();
+                // String length must be < 64
+                trayIcon.Text = "Exception: Can't receive response from remote server.";
+            }
+            catch (Exception e)
+            {
+                System.Windows.MessageBox.Show(e.ToString());
+                myTimer.Stop();
+                this.Close();
+            }
         }
     }
 }
