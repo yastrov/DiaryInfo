@@ -32,7 +32,8 @@ namespace DiaryInfo
         private Icon defaultIcon = null;//DiaryInfo.Properties.Resources.Icon1;
         private Icon attentionIcon = null;
         private const int BALOON_TIP_SHOW_DELAY = 3 * 1000;
-        private const int SECUNDS_FROM_MILI_MULTIPLIER = 1000; 
+        private const int SECUNDS_FROM_MILI_MULTIPLIER = 1000;
+        private static string DefaultTrayTitle = "DiaryInfo";
 
         public MainWindow()
         {
@@ -64,10 +65,11 @@ namespace DiaryInfo
             trayMenu.MenuItems.Add("-");
             trayMenu.MenuItems.Add("Check manually", OnCheckManuallyClick);
             trayMenu.MenuItems.Add("Authorize", OnAuthClick);
+            trayMenu.MenuItems.Add("About", OnAboutClick);
             trayMenu.MenuItems.Add("Exit", OnExitClick);
 
             trayIcon = new NotifyIcon();
-            trayIcon.Text = "DiaryInfo";
+            trayIcon.Text = DefaultTrayTitle;
             trayIcon.Click += delegate(object sender, EventArgs e)
             {
                 /*if ((e as System.Windows.Forms.MouseEventArgs).Button == System.Windows.Forms.MouseButtons.Left)
@@ -121,16 +123,19 @@ namespace DiaryInfo
         #region IconEventProcessor
         public void OnReadFavoriteClick(object sender, EventArgs e)
         {
+            trayIcon.Text = DefaultTrayTitle;
             Process.Start("http://diary.ru/?favorite");
         }
 
         public void OnReadUmailsClick(object sender, EventArgs e)
         {
+            trayIcon.Text = DefaultTrayTitle;
             Process.Start("http://www.diary.ru/u-mail/");
         }
 
         public void OnReadCommentsClick(object sender, EventArgs e)
         {
+            trayIcon.Text = DefaultTrayTitle;
             Process.Start("http://www.diary.ru/");
         }
 
@@ -152,6 +157,10 @@ namespace DiaryInfo
             trayIcon.Visible = false;
             Activate();
             this.Close();
+        }
+        private void OnAboutClick(object sender, EventArgs e)
+        {
+            new AboutBox1().Show();
         }
         #endregion
         #region EventProcessor
@@ -213,18 +222,21 @@ namespace DiaryInfo
                     return;
                 }
                 string sdata = data.ToString();
-                if (data.HasError())
-                    System.Windows.Forms.MessageBox.Show(sdata);
-                trayIcon.Text = sdata;
-                if (data.IsEmpty())
+                if (sdata != trayIcon.Text)
                 {
-                    SetDefaultIcon();
-                }
-                else
-                {
-                    trayIcon.BalloonTipText = sdata;
-                    trayIcon.ShowBalloonTip(BALOON_TIP_SHOW_DELAY);
-                    SetAttentionIcon();
+                    if (data.HasError())
+                        System.Windows.Forms.MessageBox.Show(sdata);
+                    trayIcon.Text = sdata;
+                    if (data.IsEmpty())
+                    {
+                        SetDefaultIcon();
+                    }
+                    else
+                    {
+                        trayIcon.BalloonTipText = sdata;
+                        trayIcon.ShowBalloonTip(BALOON_TIP_SHOW_DELAY);
+                        SetAttentionIcon();
+                    }
                 }
             }
             catch (WebException e)
