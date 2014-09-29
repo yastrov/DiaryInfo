@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Web;
 using System.Net;
 using System.IO;
 using System.Runtime.Serialization.Json;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace DiaryInfo
 {
@@ -102,6 +102,29 @@ namespace DiaryInfo
         private static string URL_MAIN = "http://www.diary.ru/";
         private static string URL_LOGIN = "http://pda.diary.ru/login.php";
         private static string URL_INFO = "http://pay.diary.ru/yandex/online.php";
+        private readonly SemaphoreSlim _mutex = new SemaphoreSlim(1);
+        private int _timeout = 5000;
+        public int Timeout
+        {
+            get { return _timeout; }
+            set { if(value >= 0) _timeout = value; }
+        }
+        private static string _userAgent =
+            @"Mozilla/5.0 (Windows; U; Windows NT 5.1; ru; rv:1.9.1.2) Gecko/20090729 Firefox/3.5.2";
+
+        public string UserAgent
+        {
+            get { return _userAgent; }
+            set { _userAgent = value; }
+        }
+
+        private static string _contentType = "application/x-www-form-urlencoded; charset=windows-1251";
+
+        public string ContentType
+        {
+            get { return _contentType; }
+            set { _contentType = value; }
+        }
 
         public DiaryRuClient()
         {
@@ -153,9 +176,7 @@ namespace DiaryInfo
                 postString.AppendFormat("{0}={1}", pair.Key, pair.Value);
             }
             Encoding encoding = Encoding.GetEncoding("Windows-1251");
-            HttpUtility.UrlEncode(postString.ToString(), encoding);
-            byte[] postBytes = encoding.GetBytes(postString.ToString());
-            return postBytes;
+            return encoding.GetBytes(postString.ToString());
         }
         #endregion
 
@@ -175,13 +196,15 @@ namespace DiaryInfo
             if (!String.IsNullOrEmpty(this._referer))
                 request.Referer = this._referer;
 
+            if (this._timeout != 0)
+                request.Timeout = this._timeout;
             request.AllowAutoRedirect = false;
-            request.UserAgent = "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11";
+            request.UserAgent = _userAgent;
             request.Headers.Add(HttpRequestHeader.AcceptCharset, "windows-1251,utf-8;q=0.7,*;q=0.3");
             request.CookieContainer = this._cookies;
             if (content != null)
             {
-                request.ContentType = "application/x-www-form-urlencoded; charset=windows-1251";
+                request.ContentType = _contentType;
                 request.ContentLength = content.LongLength;
                 using (Stream newStream = request.GetRequestStream())
                 {
@@ -202,14 +225,22 @@ namespace DiaryInfo
         /// <param name="password">password</param>
         public void Auth(string user, string password)
         {
-            using (HttpWebResponse response = this._Request(URL_MAIN, "GET", null)) ;
+            using (HttpWebResponse response = this._Request(URL_MAIN, "GET", null))
+            {
+                if (response.StatusCode != HttpStatusCode.OK)
+                    throw new WebException(response.StatusDescription);
+            }
             Dictionary<string, string> map = new Dictionary<string, string>();
             //NameValueCollection map = new NameValueCollection();
             map.Add("user_login", user);
             map.Add("user_pass", password);
             map.Add("save", "on");
             byte[] data = EncodeValues(map);
-            using (HttpWebResponse response = this._Request(URL_LOGIN, "POST", data)) ;
+            using (HttpWebResponse response = this._Request(URL_LOGIN, "POST", data))
+            {
+                if (response.StatusCode != HttpStatusCode.OK)
+                    throw new WebException(response.StatusDescription);
+            }
         }
 
         /// <summary>
@@ -254,22 +285,32 @@ namespace DiaryInfo
             if (!String.IsNullOrEmpty(this._referer))
                 request.Referer = this._referer;
 
+            if (this._timeout != 0)
+                request.Timeout = this._timeout;
             request.AllowAutoRedirect = false;
-            request.UserAgent = "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11";
+            request.UserAgent = _userAgent;
             request.Headers.Add(HttpRequestHeader.AcceptCharset, "windows-1251,utf-8;q=0.7,*;q=0.3");
             request.CookieContainer = this._cookies;
             if (content != null)
             {
-                request.ContentType = "application/x-www-form-urlencoded; charset=windows-1251";
+                request.ContentType = _contentType;
                 request.ContentLength = content.LongLength;
                 using (Stream newStream = await request.GetRequestStreamAsync())
                 {
                     newStream.Write(content, 0, content.Length);
                 }
             }
-            HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync();
-            request = null;
-            this._BugFix_CookieDomain(this._cookies);
+            HttpWebResponse response = null;
+            await _mutex.WaitAsync();
+            try
+            {
+                response = (HttpWebResponse)await request.GetResponseAsync();
+                request = null;
+                this._BugFix_CookieDomain(this._cookies);
+            }
+            finally {
+                _mutex.Release();
+            }
             this._referer = url;
             return response;
         }
@@ -281,14 +322,22 @@ namespace DiaryInfo
         /// <param name="password">password</param>
         public async Task AuthAsync(string user, string password)
         {
-            using (HttpWebResponse response = await this._RequestAsync(URL_MAIN, "GET", null)) ;
+            using (HttpWebResponse response = await this._RequestAsync(URL_MAIN, "GET", null).ConfigureAwait(false))
+            {
+                if (response.StatusCode != HttpStatusCode.OK)
+                    throw new WebException(response.StatusDescription);
+            }
             Dictionary<string, string> map = new Dictionary<string, string>();
             //NameValueCollection map = new NameValueCollection();
             map.Add("user_login", user);
             map.Add("user_pass", password);
             map.Add("save", "on");
             byte[] data = EncodeValues(map);
-            using (HttpWebResponse response = await this._RequestAsync(URL_LOGIN, "POST", data)) ;
+            using (HttpWebResponse response = await this._RequestAsync(URL_LOGIN, "POST", data).ConfigureAwait(false))
+            {
+                if (response.StatusCode != HttpStatusCode.OK)
+                    throw new WebException(response.StatusDescription);
+            }
         }
 
         /// <summary>
@@ -297,23 +346,21 @@ namespace DiaryInfo
         /// <returns></returns>
         public async Task<DiaryRuInfo> GetInfoAsync()
         {
-            DiaryRuInfo info = null;
-            using (HttpWebResponse response = await this._RequestAsync(URL_INFO, "GET", null))
+            using (HttpWebResponse response = await this._RequestAsync(URL_INFO, "GET", null).ConfigureAwait(false))
             {
                 DataContractJsonSerializer json = new DataContractJsonSerializer(typeof(DiaryRuInfo));
                 using (Stream oStream = response.GetResponseStream())
                 {
                     try
                     {
-                        info = (DiaryRuInfo)json.ReadObject(oStream);
+                        return (DiaryRuInfo)json.ReadObject(oStream);
                     }
                     catch (Exception e)
                     {
-                        info = null;
+                        return null;
                     }
                 }
             }
-            return info;
         }
         #endregion
     }
