@@ -59,8 +59,11 @@ namespace DiaryInfo
 
         private void AuthForm_FormClosed(object sender, FormClosedEventArgs e)
         {
+            d = null;
             if (!closedWithSendData)
+            {
                 Application.Exit();
+            }
         }
     }
 }
