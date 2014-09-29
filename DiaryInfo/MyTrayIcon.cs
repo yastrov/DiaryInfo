@@ -19,7 +19,8 @@ namespace DiaryInfo
         private Timer myTimer = null;
         private Icon defaultIcon = Resource.Icon1;
         private Icon attentionIcon = Resource.Icon2;
-        private const int BALOON_TIP_SHOW_DELAY = 5 * 1000;
+        private const int BALOON_TIP_SHOW_DELAY = 4 * 1000;
+        private static string DefaultTrayTitle = "DiaryInfo";
 
         /// <summary>
         /// Event Handler for Timer
@@ -56,16 +57,21 @@ namespace DiaryInfo
                     return;
                 }
                 string sdata = data.ToString();
-                if (data.HasError())
-                    MessageBox.Show(sdata);
-                trayIcon.Text = sdata;
-                if (data.IsEmpty()) {
-                    SetDefaultIcon();
-                }
-                else {
-                    trayIcon.BalloonTipText = sdata;
-                    trayIcon.ShowBalloonTip(BALOON_TIP_SHOW_DELAY);
-                    SetAttentionIcon();
+                if (sdata != trayIcon.Text)
+                {
+                    if (data.HasError())
+                        MessageBox.Show(sdata);
+                    trayIcon.Text = sdata;
+                    if (data.IsEmpty())
+                    {
+                        SetDefaultIcon();
+                    }
+                    else
+                    {
+                        trayIcon.BalloonTipText = sdata;
+                        trayIcon.ShowBalloonTip(BALOON_TIP_SHOW_DELAY);
+                        SetAttentionIcon();
+                    }
                 }
             }
             catch (WebException e) {
@@ -119,7 +125,7 @@ namespace DiaryInfo
             // standard system icon for simplicity, but you
             // can of course use your own custom icon too.
             trayIcon = new NotifyIcon();
-            trayIcon.Text = "DiaryInfo";
+            trayIcon.Text = DefaultTrayTitle;
             trayIcon.MouseClick += new MouseEventHandler(trayIconMouseClick);
             // Add menu to tray icon and show it.
             trayIcon.ContextMenu = trayMenu;
@@ -216,6 +222,7 @@ namespace DiaryInfo
         /// <param name="e"></param>
         private void OnReadUmails(object sender, EventArgs e)
         {
+            trayIcon.Text = DefaultTrayTitle;
             Process.Start("http://www.diary.ru/u-mail/");
         }
 
@@ -226,6 +233,7 @@ namespace DiaryInfo
         /// <param name="e"></param>
         private void OnReadComments(object sender, EventArgs e)
         {
+            trayIcon.Text = DefaultTrayTitle;
             Process.Start("http://www.diary.ru/");
         }
 
@@ -236,6 +244,7 @@ namespace DiaryInfo
         /// <param name="e"></param>
         private void OnReadFavorite(object sender, EventArgs e)
         {
+            trayIcon.Text = DefaultTrayTitle;
             Process.Start("http://diary.ru/?favorite");
         }
 
