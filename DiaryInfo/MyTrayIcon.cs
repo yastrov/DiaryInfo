@@ -81,7 +81,10 @@ namespace DiaryInfo
             }
             catch (WebException e) {
                 MessageBox.Show(e.Message, MyTrayIcon.DefaultTrayTitle, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                SetDefaultIcon(e.Message.Substring(0,63));
+                string message = e.Message;
+                if (message.Length > 63)
+                    message = message.Substring(0, 63);
+                SetDefaultIcon(message);
                 // String length must be < 64
             }
             catch (Exception e)
