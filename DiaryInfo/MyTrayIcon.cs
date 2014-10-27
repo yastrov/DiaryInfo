@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace DiaryInfo
 {
-    public delegate void OptionsHandlerDelegate(string user, string password, string timeout);
+    public delegate void OptionsHandlerDelegate(string user, string password, int timeout);
 
     class MyTrayIcon : Form
     {
@@ -17,11 +17,14 @@ namespace DiaryInfo
         private ContextMenu trayMenu;
         private DiaryRuClient client = null;
         private Timer myTimer = null;
-        private Icon defaultIcon = Resource.Icon1;
-        private Icon attentionIcon = Resource.Icon2;
+        private Icon defaultIcon = DiaryInfo.Properties.Resources.Icon1;
+        private Icon attentionIcon = DiaryInfo.Properties.Resources.Icon2;
         private const int BALOON_TIP_SHOW_DELAY = 4 * 1000;
-        private static string DefaultTrayTitle = "DiaryInfo";
+        public static string DefaultTrayTitle = "DiaryInfo";
+        private static string CANT_DECODE_RESPONSE = "Can't decode response from remote server.";
+        private bool authFormShowing = false;
 
+        #region TimerRegion
         /// <summary>
         /// Event Handler for Timer
         /// </summary>
@@ -42,7 +45,8 @@ namespace DiaryInfo
             myTimer.Interval = secunds * 1000;
             myTimer.Start();
         }
-
+        #endregion
+        #region DoRequestAsync
         /// <summary>
         /// Do request with DiaryRu Client
         /// </summary>
@@ -50,58 +54,79 @@ namespace DiaryInfo
         {
             try {
                 DiaryRuInfo data = await client.GetInfoAsync();
-                if (data == null) {
-                    SetDefaultIcon();
-                    trayIcon.Text = "Can't decode response from remote server.";
-                    MessageBox.Show("Can't decode response from remote server.");
+                if (data == null)
+                {
+                    SetDefaultIcon(CANT_DECODE_RESPONSE);
+                    MessageBox.Show(CANT_DECODE_RESPONSE, MyTrayIcon.DefaultTrayTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
                 string sdata = data.ToString();
                 if (sdata != trayIcon.Text)
                 {
                     if (data.HasError())
-                        MessageBox.Show(sdata);
-                    trayIcon.Text = sdata;
+                    {
+                        MessageBox.Show(sdata, MyTrayIcon.DefaultTrayTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        SetDefaultIcon(sdata);
+                        return;
+                    }
                     if (data.IsEmpty())
                     {
-                        SetDefaultIcon();
+                        SetDefaultIcon(sdata);
                     }
                     else
                     {
-                        trayIcon.BalloonTipText = sdata;
-                        trayIcon.ShowBalloonTip(BALOON_TIP_SHOW_DELAY);
-                        SetAttentionIcon();
+                        SetAttentionIcon(sdata, sdata);
                     }
                 }
             }
             catch (WebException e) {
-                MessageBox.Show(e.Message);
-                SetDefaultIcon();
+                MessageBox.Show(e.Message, MyTrayIcon.DefaultTrayTitle, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                SetDefaultIcon(e.Message.Substring(0,63));
                 // String length must be < 64
-                trayIcon.Text = "Exception: Can't receive response from remote server.";
             }
             catch (Exception e)
             {
-                MessageBox.Show(e.ToString());
+                MessageBox.Show(e.ToString(), MyTrayIcon.DefaultTrayTitle, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 myTimer.Stop();
                 this.Close();
             }
         }
-
+        #endregion
+        #region IconRegion
         /// <summary>
         /// Set default tray Icon
         /// </summary>
-        public void SetDefaultIcon()
+        /// <param name="Text">Tray Icon Text</param>
+        /// <param name="BaloonTipText">Baloon Text</param>
+        public void SetDefaultIcon(string Text = null, string BaloonTipText = null)
         {
             trayIcon.Icon = defaultIcon;
+            if (Text != null)
+                trayIcon.Text = Text;
+            else trayIcon.Text = DefaultTrayTitle;
+            if (BaloonTipText != null)
+            {
+                trayIcon.BalloonTipText = BaloonTipText;
+                trayIcon.ShowBalloonTip(BALOON_TIP_SHOW_DELAY);
+            }
         }
 
         /// <summary>
         /// Set attention tray icon
         /// </summary>
-        public void SetAttentionIcon()
+        /// <param name="Text">Tray Icon Text</param>
+        /// <param name="BaloonTipText">Baloon Text</param>
+        public void SetAttentionIcon(string Text = null, string BaloonTipText = null)
         {
             trayIcon.Icon = attentionIcon;
+            if (Text != null)
+                trayIcon.Text = Text;
+            else trayIcon.Text = DefaultTrayTitle;
+            if (BaloonTipText != null)
+            {
+                trayIcon.BalloonTipText = BaloonTipText;
+                trayIcon.ShowBalloonTip(BALOON_TIP_SHOW_DELAY);
+            }
         }
 
         /// <summary>
@@ -125,7 +150,6 @@ namespace DiaryInfo
             // standard system icon for simplicity, but you
             // can of course use your own custom icon too.
             trayIcon = new NotifyIcon();
-            trayIcon.Text = DefaultTrayTitle;
             trayIcon.MouseClick += new MouseEventHandler(trayIconMouseClick);
             // Add menu to tray icon and show it.
             trayIcon.ContextMenu = trayMenu;
@@ -133,6 +157,7 @@ namespace DiaryInfo
             myTimer.Tick += new EventHandler(TimerEventProcessor);
             SetDefaultIcon();
         }
+        #endregion
 
         public MyTrayIcon()
         {
@@ -155,7 +180,7 @@ namespace DiaryInfo
             if(myTimer != null) myTimer.Stop();
             this.Close();
         }
-
+        #region EventHandlers
         /// <summary>
         /// Authorize ContextMenu event handler
         /// </summary>
@@ -163,6 +188,8 @@ namespace DiaryInfo
         /// <param name="e"></param>
         private void OnAuth(object sender, EventArgs e)
         {
+            if (authFormShowing)
+                return;
             myTimer.Stop();
             AuthForm form = new AuthForm(new OptionsHandlerDelegate(ReceiveAuthData));
             form.StartPosition = FormStartPosition.CenterScreen;
@@ -186,12 +213,13 @@ namespace DiaryInfo
         /// <param name="user"></param>
         /// <param name="password"></param>
         /// <param name="timeout"></param>
-        private async void ReceiveAuthData(string user, string password, string timeout) {
+        private async void ReceiveAuthData(string user, string password, int timeout) {
+            authFormShowing = false;
             try
             {
                 await this.client.AuthAsync(user, password);
                 await DoRequestAsync();
-                StartTimer(Convert.ToInt32(timeout));
+                StartTimer(timeout);
             }
             catch (WebException e) {
                 StringBuilder sb = new StringBuilder();
@@ -222,8 +250,15 @@ namespace DiaryInfo
         /// <param name="e"></param>
         private void OnReadUmails(object sender, EventArgs e)
         {
-            trayIcon.Text = DefaultTrayTitle;
-            Process.Start("http://www.diary.ru/u-mail/");
+            SetDefaultIcon();
+            try
+            {
+                Process.Start("http://www.diary.ru/u-mail/");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
         }
 
         /// <summary>
@@ -233,8 +268,15 @@ namespace DiaryInfo
         /// <param name="e"></param>
         private void OnReadComments(object sender, EventArgs e)
         {
-            trayIcon.Text = DefaultTrayTitle;
-            Process.Start("http://www.diary.ru/");
+            SetDefaultIcon();
+            try
+            {
+                Process.Start("http://www.diary.ru/");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
         }
 
         /// <summary>
@@ -244,14 +286,22 @@ namespace DiaryInfo
         /// <param name="e"></param>
         private void OnReadFavorite(object sender, EventArgs e)
         {
-            trayIcon.Text = DefaultTrayTitle;
-            Process.Start("http://diary.ru/?favorite");
+            SetDefaultIcon();
+            try
+            {
+                Process.Start("http://diary.ru/?favorite");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
         }
 
         private void OnAboutClick(object sender, EventArgs e)
         {
             new AboutWindow().Show();
         }
+        #endregion
 
         protected override void Dispose(bool isDisposing)
         {

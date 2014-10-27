@@ -17,12 +17,38 @@ namespace DiaryInfo
         {
             InitializeComponent();
             d = sender;
+            this.Icon = DiaryInfo.Properties.Resources.Icon1;
+            this.ControlBox = false;
         }
 
+        private static void ShowMessageBox(string Text)
+        {
+            MessageBox.Show(Text, MyTrayIcon.DefaultTrayTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
         private void button1_Click(object sender, EventArgs e)
         {
+            int timeout = 0;
+            try
+            {
+                timeout = Convert.ToInt32(textBox3.Text);
+                if (timeout < 0)
+                {
+                    ShowMessageBox("Your timeout must be bigger then 0!");
+                    return;
+                }
+            }
+            catch (FormatException)
+            {
+                ShowMessageBox("Your timeout is not number!");
+                return;
+            }
+            catch (OverflowException)
+            {
+                ShowMessageBox("Your timeout is very big!");
+                return;
+            }
             Visible = false;
-            d.Invoke(textBox1.Text, textBox2.Text, textBox3.Text);
+            d.Invoke(textBox1.Text, textBox2.Text, timeout);
             closedWithSendData = true;
             this.Close();
         }
@@ -51,7 +77,6 @@ namespace DiaryInfo
             this.ActiveControl = textBox1;
             textBox1.Focus();
             textBox1.Select();
-            ShowInTaskbar = false;
             StringBuilder sb = new StringBuilder();
             sb.Append("Author: Yuri Astrov\n").Append("Version: ").Append(typeof(AuthForm).Assembly.GetName().Version.ToString());
             label5.Text = sb.ToString();
