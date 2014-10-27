@@ -60,6 +60,8 @@ namespace DiaryInfo
         /// </summary>
         /// <returns>true if non-zero messages. false in other.</returns>
         public bool IsEmpty() {
+            if (this.HasError())
+                return true;
             if (this.NewComments.Count+
                 this.Umails.Count+this.Discuss.Count == 0)
                 return true;
@@ -128,7 +130,7 @@ namespace DiaryInfo
 
         public DiaryRuClient()
         {
-            this._cookies = new CookieContainer();
+            ;
         }
 
         #region Common
@@ -225,6 +227,7 @@ namespace DiaryInfo
         /// <param name="password">password</param>
         public void Auth(string user, string password)
         {
+            this._cookies = new CookieContainer();
             using (HttpWebResponse response = this._Request(URL_MAIN, "GET", null))
             {
                 if (response.StatusCode != HttpStatusCode.OK)
@@ -249,7 +252,6 @@ namespace DiaryInfo
         /// <returns></returns>
         public DiaryRuInfo GetInfo()
         {
-            DiaryRuInfo info = null;
             using (HttpWebResponse response = this._Request(URL_INFO, "GET", null))
             {
                 DataContractJsonSerializer json = new DataContractJsonSerializer(typeof(DiaryRuInfo));
@@ -257,15 +259,14 @@ namespace DiaryInfo
                 {
                     try
                     {
-                        info = (DiaryRuInfo)json.ReadObject(oStream);
+                        return (DiaryRuInfo)json.ReadObject(oStream);
                     }
                     catch (Exception e)
                     {
-                        info = null;
+                        return null;
                     }
                 }
             }
-            return info;
         }
         #endregion
         
@@ -322,6 +323,7 @@ namespace DiaryInfo
         /// <param name="password">password</param>
         public async Task AuthAsync(string user, string password)
         {
+            this._cookies = new CookieContainer();
             using (HttpWebResponse response = await this._RequestAsync(URL_MAIN, "GET", null).ConfigureAwait(false))
             {
                 if (response.StatusCode != HttpStatusCode.OK)
