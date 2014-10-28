@@ -1,18 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Windows.Forms;
 using System.Drawing;
 using System.Reflection;
@@ -29,11 +19,12 @@ namespace DiaryInfo
         private System.Windows.Forms.ContextMenu trayMenu = null;
         private DiaryRuClient client = null;
         private Timer myTimer = null;
-        private Icon defaultIcon = null;//DiaryInfo.Properties.Resources.Icon1;
-        private Icon attentionIcon = null;
+        private Icon defaultIcon = DiaryInfo.Properties.Resources.MainIcon;
+        private Icon attentionIcon = DiaryInfo.Properties.Resources.InfoIcon;
         private const int BALOON_TIP_SHOW_DELAY = 3 * 1000;
         private const int SECUNDS_FROM_MILI_MULTIPLIER = 1000;
         private static string DefaultTrayTitle = "DiaryInfo";
+        private static string CANT_DECODE_RESPONSE = "Can't decode response from remote server.";
 
         public MainWindow()
         {
@@ -48,7 +39,6 @@ namespace DiaryInfo
             myTimer.Tick += new EventHandler(TimerEventProcessor);
             client = new DiaryRuClient();
             usernameTextBox.Focus();
-
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("Author: Yuri Astrov").Append("Version: ").Append(typeof(MainWindow).Assembly.GetName().Version.ToString());
             AuthorLabel.Content = sb.ToString();
@@ -69,7 +59,6 @@ namespace DiaryInfo
             trayMenu.MenuItems.Add("Exit", OnExitClick);
 
             trayIcon = new NotifyIcon();
-            trayIcon.Text = DefaultTrayTitle;
             trayIcon.Click += delegate(object sender, EventArgs e)
             {
                 /*if ((e as System.Windows.Forms.MouseEventArgs).Button == System.Windows.Forms.MouseButtons.Left)
@@ -87,56 +76,83 @@ namespace DiaryInfo
             // Add menu to tray icon and show it.
             trayIcon.ContextMenu = trayMenu;
             trayIcon.Visible = true;
-
-            Font font = new Font("Helvetica", 22);
-            defaultIcon = CreateIconFromText("D", font, System.Drawing.Color.Red);
-            attentionIcon = CreateIconFromText("D", font, System.Drawing.Color.Green);
-            trayIcon.Icon = defaultIcon;
-        }
-
-        protected static Icon CreateIconFromText(string text, Font font, System.Drawing.Color color)
-        {
-            Bitmap bitmap = new Bitmap(32, 32);//, System.Drawing.Imaging.PixelFormat.Max);
-            System.Drawing.Brush brush = new SolidBrush(color);
-            Graphics graphics = Graphics.FromImage(bitmap);
-            graphics.DrawString(text, font, brush, 0, 0);
-            IntPtr hIcon = bitmap.GetHicon();
-            return System.Drawing.Icon.FromHandle(hIcon);
+            SetDefaultIcon();
         }
 
         /// <summary>
         /// Set default tray Icon
         /// </summary>
-        public void SetDefaultIcon()
+        /// <param name="Text">Tray Icon Text</param>
+        /// <param name="BaloonTipText">Baloon Text</param>
+        public void SetDefaultIcon(string Text = null, string BaloonTipText = null)
         {
             trayIcon.Icon = defaultIcon;
+            if (Text != null)
+                trayIcon.Text = Text;
+            else trayIcon.Text = DefaultTrayTitle;
+            if (BaloonTipText != null)
+            {
+                trayIcon.BalloonTipText = BaloonTipText;
+                trayIcon.ShowBalloonTip(BALOON_TIP_SHOW_DELAY);
+            }
         }
 
         /// <summary>
         /// Set attention tray icon
         /// </summary>
-        public void SetAttentionIcon()
+        /// <param name="Text">Tray Icon Text</param>
+        /// <param name="BaloonTipText">Baloon Text</param>
+        public void SetAttentionIcon(string Text = null, string BaloonTipText = null)
         {
             trayIcon.Icon = attentionIcon;
+            if (Text != null)
+                trayIcon.Text = Text;
+            else trayIcon.Text = DefaultTrayTitle;
+            if (BaloonTipText != null)
+            {
+                trayIcon.BalloonTipText = BaloonTipText;
+                trayIcon.ShowBalloonTip(BALOON_TIP_SHOW_DELAY);
+            }
         }
         #endregion
         #region IconEventProcessor
         public void OnReadFavoriteClick(object sender, EventArgs e)
         {
-            trayIcon.Text = DefaultTrayTitle;
-            Process.Start("http://diary.ru/?favorite");
+            SetDefaultIcon();
+            try
+            {
+                Process.Start("http://diary.ru/?favorite");
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(ex.Message, MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         public void OnReadUmailsClick(object sender, EventArgs e)
         {
-            trayIcon.Text = DefaultTrayTitle;
-            Process.Start("http://www.diary.ru/u-mail/");
+            SetDefaultIcon();
+            try
+            {
+                Process.Start("http://www.diary.ru/u-mail/");
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(ex.Message, MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         public void OnReadCommentsClick(object sender, EventArgs e)
         {
-            trayIcon.Text = DefaultTrayTitle;
-            Process.Start("http://www.diary.ru/");
+            SetDefaultIcon();
+            try
+            {
+                Process.Start("http://www.diary.ru/");
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(ex.Message, MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         public async void OnCheckManuallyClick(object sender, EventArgs e)
@@ -160,7 +176,7 @@ namespace DiaryInfo
         }
         private void OnAboutClick(object sender, EventArgs e)
         {
-            new AboutBox1().Show();
+            new AboutWindow().Show();
         }
         #endregion
         #region EventProcessor
@@ -183,7 +199,27 @@ namespace DiaryInfo
                 if (timeoutTextBox.Text.Equals("300"))
                     myTimer.Interval = 300000;
                 else
-                    myTimer.Interval = Convert.ToInt32(timeoutTextBox.Text) * SECUNDS_FROM_MILI_MULTIPLIER;
+                {
+                    try
+                    {
+                        int timeout = 0;
+                        timeout = Convert.ToInt32(timeoutTextBox.Text);
+                        if (timeout < 0) {
+                            System.Windows.MessageBox.Show("Timeout value must be bigger than 0!", MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error);
+                            return;
+                        }
+                        else
+                            myTimer.Interval = timeout * SECUNDS_FROM_MILI_MULTIPLIER;
+                    }
+                    catch (FormatException)
+                    {
+                        System.Windows.MessageBox.Show("Timeout value is not valid number!", MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                    catch (OverflowException)
+                    {
+                        System.Windows.MessageBox.Show("Timeout value is very big!", MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
                 myTimer.Start();
                 this.Hide();
             }
@@ -202,7 +238,26 @@ namespace DiaryInfo
 
         private void TimerButtonClick(object sender, EventArgs e)
         {
-            myTimer.Interval = Convert.ToInt32(timeoutTextBox.Text) * SECUNDS_FROM_MILI_MULTIPLIER;
+            try
+            {
+                int timeout = 0;
+                timeout = Convert.ToInt32(timeoutTextBox.Text);
+                if (timeout < 0)
+                {
+                    System.Windows.MessageBox.Show("Timeout value must be bigger than 0!", MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+                else
+                    myTimer.Interval = timeout * SECUNDS_FROM_MILI_MULTIPLIER;
+            }
+            catch (FormatException)
+            {
+                System.Windows.MessageBox.Show("Timeout value is not valid number!", MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            catch (OverflowException)
+            {
+                System.Windows.MessageBox.Show("Timeout value is very big!", MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
         #endregion
 
@@ -216,39 +271,43 @@ namespace DiaryInfo
                 DiaryRuInfo data = await client.GetInfoAsync();
                 if (data == null)
                 {
-                    SetDefaultIcon();
-                    trayIcon.Text = "Can't decode response from remote server.";
-                    System.Windows.Forms.MessageBox.Show("Can't decode response from remote server.");
+                    SetDefaultIcon(CANT_DECODE_RESPONSE);
+                    System.Windows.MessageBox.Show(CANT_DECODE_RESPONSE, MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
                 string sdata = data.ToString();
                 if (sdata != trayIcon.Text)
                 {
                     if (data.HasError())
-                        System.Windows.Forms.MessageBox.Show(sdata);
-                    trayIcon.Text = sdata;
-                    if (data.IsEmpty())
                     {
-                        SetDefaultIcon();
+                        System.Windows.MessageBox.Show(sdata, MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
+                        SetDefaultIcon(sdata);
                     }
                     else
                     {
-                        trayIcon.BalloonTipText = sdata;
-                        trayIcon.ShowBalloonTip(BALOON_TIP_SHOW_DELAY);
-                        SetAttentionIcon();
+                        if (data.IsEmpty())
+                        {
+                            SetDefaultIcon(sdata);
+                        }
+                        else
+                        {
+                            SetAttentionIcon(sdata, sdata);
+                        }
                     }
                 }
             }
             catch (WebException e)
             {
-                System.Windows.MessageBox.Show(e.Message);
-                SetDefaultIcon();
+                System.Windows.MessageBox.Show(e.Message, MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
+                string message = e.Message;
+                if (message.Length > 63)
+                    message = message.Substring(0, 63);
+                SetDefaultIcon(message);
                 // String length must be < 64
-                trayIcon.Text = "Exception: Can't receive response from remote server.";
             }
             catch (Exception e)
             {
-                System.Windows.MessageBox.Show(e.ToString());
+                System.Windows.MessageBox.Show(e.ToString(), MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
                 myTimer.Stop();
                 this.Close();
             }

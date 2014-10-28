@@ -1,0 +1,74 @@
+﻿<Window x:Class="DiaryInfo.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="About DiaryInfo" Height="288" MinWidth="300" Icon="images/MainIcon.ico"
+        WindowStartupLocation="CenterScreen" SizeToContent="Height" ResizeMode="CanResizeWithGrip" Width="333">
+    <Window.Resources>
+        <Style x:Key="MyFontStyle">
+            <Setter Property="Control.FontFamily" Value="Calibri"></Setter>
+            <Setter Property="Control.FontSize" Value="18"></Setter>
+            <Setter Property="Control.FontWeight" Value="Bold"></Setter>
+            <Setter Property="Control.Padding" Value="5"></Setter>
+            <Setter Property="Control.Margin" Value="5"></Setter>
+        </Style>
+        <Style TargetType="{x:Type Button}">
+            <Setter Property="MinWidth" Value="100"/>
+            <Setter Property="Margin" Value="2,5"/>
+            <Setter Property="Padding" Value="5,5" />
+        </Style>
+    </Window.Resources>
+    <Grid Style="{StaticResource MyFontStyle}" HorizontalAlignment="Center" Height="Auto" VerticalAlignment="Top" Width="auto">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"></ColumnDefinition>
+            <ColumnDefinition Width="Auto"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <Grid.Resources>
+            <Style TargetType="{x:Type Label}">
+                <Setter Property="Margin" Value="5,2,5,2"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            </Style>
+        </Grid.Resources>
+        <Label Content="DiaryInfo" Grid.Row="0" Grid.ColumnSpan="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <Label Content="Product Name" Grid.Row="1" Grid.Column="0"/>
+        <Label Content="Version" Grid.Row="2" Grid.Column="0"/>
+        <Label Content="Copyright" Grid.Row="3" Grid.Column="0"/>
+        <Label Content="Company Name" Grid.Row="4" Grid.Column="0"/>
+
+        <Label Name="productNameLabel" Grid.Row="1" Grid.Column="1"/>
+        <Label Name="versionLabel" Grid.Row="2" Grid.Column="1"/>
+        <Label Name="copyrightLabel" Grid.Row="3" Grid.Column="1"/>
+        <Label Name="companyLabel" Grid.Row="4" Grid.Column="1"/>
+        <Label Content="Description:" Grid.Row="5" Grid.ColumnSpan="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <ScrollViewer Grid.Row="6" Grid.ColumnSpan="2" ScrollViewer.VerticalScrollBarVisibility="Visible"
+                          MaxHeight="160" MaxWidth="280" HorizontalAlignment="Center" HorizontalContentAlignment="Center">
+            <TextBlock TextWrapping="Wrap" HorizontalAlignment="Center" ScrollViewer.CanContentScroll="True" Width="auto">
+                This is simple desktop application for notification about new messages on 
+                <Hyperlink RequestNavigate="Hyperlink_RequestNavigate" NavigateUri="http://diary.ru">http://diary.ru</Hyperlink> web service.
+                <LineBreak/>
+                <LineBreak/>- If you have unread messages, you see green icon in system tray and popup baloon tip. 
+                (If you have no unread messages from last check, you see only tray icon and noo balon tip.)<LineBreak/>
+                - If you have no unread messages, you see red tray icon only.<LineBreak/>
+                <LineBreak/>Links:<LineBreak/>
+                <Hyperlink RequestNavigate="Hyperlink_RequestNavigate" NavigateUri="https://github.com/yastrov/DiaryInfo">Homepage for project</Hyperlink>
+                <LineBreak/>
+                <Hyperlink RequestNavigate="Hyperlink_RequestNavigate" NavigateUri="https://github.com/yastrov/DiaryInfo/releases">New releases</Hyperlink>
+                <LineBreak/>
+                Written by Yuri Astrov<LineBreak/>
+                Powered by WPF technology.
+            </TextBlock>
+        </ScrollViewer>
+        <Button Grid.Row="7" Grid.ColumnSpan="2" Content="Close" Click="CloseButtonClick" HorizontalAlignment="Center"
+                    HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+    </Grid>
+</Window>
