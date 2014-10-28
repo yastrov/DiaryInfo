@@ -15,6 +15,7 @@ namespace DiaryInfo
         public AboutWindow()
         {
             InitializeComponent();
+            this.Icon = DiaryInfo.Properties.Resources.Icon1;
             this.Text = String.Format("About {0}", AssemblyTitle);
             this.labelProductName.Text = AssemblyProduct;
             this.labelVersion.Text = String.Format("Version {0}", AssemblyVersion);
@@ -28,7 +29,7 @@ namespace DiaryInfo
               .Append("system tray and popup ballon tip. ")
               .Append("If you have no unread messages, you see red tray icon only.")
               .AppendLine(Environment.NewLine)
-              .AppendLine("Homepage for projet:")
+              .AppendLine("Homepage for project:")
               .AppendLine("https://github.com/yastrov/DiaryInfo")
               .AppendLine("You can see new versions at:")
               .AppendLine("https://github.com/yastrov/DiaryInfo/releases")
