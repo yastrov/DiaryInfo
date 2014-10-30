@@ -25,13 +25,37 @@ namespace DiaryInfo
         public int Count { get; set; }
     }
     [DataContract]
-    public struct Umails
+    public class Umails
     {
         [DataMember(Name = "count")]
         public int Count { get; set; }
+        [DataMember(Name = "0")]
+        public UmailZeroInfo Umail { get; set; }
+        
+        public override string ToString()
+        {
+            if (this.Umail != null)
+                return this.Umail.ToString();
+            else return string.Empty;
+        }
     }
     [DataContract]
-    public struct UserInfo
+    public class UmailZeroInfo
+    {
+        [DataMember(Name="from_username")]
+        public string FromUserName { get; set; }
+        [DataMember(Name = "title")]
+        public string Title { get; set; }
+        
+        public override string ToString()
+        {
+            if (this.FromUserName != null && this.Title != null)
+                return String.Format("From: {0}\nTitle: {1}", this.FromUserName, this.Title);
+            else return string.Empty;
+        }
+    }
+    [DataContract]
+    public class UserInfo
     {
         [DataMember(Name = "userid")]
         public string UserId  { get; set; }
@@ -76,11 +100,18 @@ namespace DiaryInfo
             if (this.Error != null)
                 return this.Error;
             StringBuilder str = new StringBuilder();
-            str.Append(this.UserInfo.UserName).Append("\n")
-                .Append("NewComments: ").Append(this.NewComments.Count)
-                .Append("\n").Append("Discuss: ").Append(this.Discuss.Count)
-                .Append("\n").Append("Umails: ").Append(this.Umails.Count);
-            return str.ToString();
+            str.Append(this.UserInfo.UserName);
+            if (this.NewComments.Count > 0)
+                str.Append("\n").Append("NewComments: ").Append(this.NewComments.Count);
+            if (this.Discuss.Count > 0)
+                str.Append("\n").Append("Discuss: ").Append(this.Discuss.Count);
+            if(this.Umails.Count > 0)
+                str.Append("\n").Append("Umails: ").Append(this.Umails.Count)
+                .Append("\n").Append(this.Umails.ToString());
+            string result = str.ToString();
+            if (result.Length < 63)
+                return result;
+            else return result.Substring(0, 63);
         }
 
         /// <summary>
@@ -105,14 +136,15 @@ namespace DiaryInfo
         private static string URL_LOGIN = "http://pda.diary.ru/login.php";
         private static string URL_INFO = "http://pay.diary.ru/yandex/online.php";
         private readonly SemaphoreSlim _mutex = new SemaphoreSlim(1);
+        private static readonly Uri _diaryuri = new Uri("http://diary.ru/");
+        public static readonly string CookiesFileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "DiaryInfoCookies.data");
         private int _timeout = 5000;
         public int Timeout
         {
             get { return _timeout; }
             set { if(value >= 0) _timeout = value; }
         }
-        private static string _userAgent =
-            @"Mozilla/5.0 (Windows; U; Windows NT 5.1; ru; rv:1.9.1.2) Gecko/20090729 Firefox/3.5.2";
+        private static string _userAgent = @"DiaryInfo";
 
         public string UserAgent
         {
@@ -132,55 +164,6 @@ namespace DiaryInfo
         {
             ;
         }
-
-        #region Common
-        /// <summary>
-        /// Bug fix for Cookie processing in .NET Framework.
-        /// </summary>
-        /// <param name="cookieContainer"></param>
-        private void _BugFix_CookieDomain(CookieContainer cookieContainer)
-        {
-            System.Collections.Hashtable table = (System.Collections.Hashtable)cookieContainer.GetType().InvokeMember("m_domainTable",
-                System.Reflection.BindingFlags.NonPublic |
-                System.Reflection.BindingFlags.GetField |
-                System.Reflection.BindingFlags.Instance,
-                null,
-                cookieContainer,
-                new object[] { }
-            );
-            System.Collections.ArrayList keys = new System.Collections.ArrayList(table.Keys);
-            foreach (string keyObj in keys)
-            {
-                string key = (keyObj as string);
-                if (key[0] == '.')
-                {
-                    string newKey = key.Remove(0, 1);
-                    table[newKey] = table[keyObj];
-                }
-            }
-        }
-
-        /// <summary>
-        /// Encode pair values to byte array.
-        /// </summary>
-        /// <param name="_formValues"></param>
-        /// <returns></returns>
-        public static byte[] EncodeValues(Dictionary<string, string> _formValues)
-        {
-            StringBuilder postString = new StringBuilder();
-            bool first = true;
-            foreach (var pair in _formValues)
-            {
-                if (first)
-                    first = false;
-                else
-                    postString.Append("&");
-                postString.AppendFormat("{0}={1}", pair.Key, pair.Value);
-            }
-            Encoding encoding = Encoding.GetEncoding("Windows-1251");
-            return encoding.GetBytes(postString.ToString());
-        }
-        #endregion
 
         #region NonAsync
         /// <summary>
@@ -215,7 +198,6 @@ namespace DiaryInfo
             }
             HttpWebResponse response = (HttpWebResponse)request.GetResponse();
             request = null;
-            this._BugFix_CookieDomain(this._cookies);
             this._referer = url;
             return response;
         }
@@ -233,12 +215,9 @@ namespace DiaryInfo
                 if (response.StatusCode != HttpStatusCode.OK)
                     throw new WebException(response.StatusDescription);
             }
-            Dictionary<string, string> map = new Dictionary<string, string>();
-            //NameValueCollection map = new NameValueCollection();
-            map.Add("user_login", user);
-            map.Add("user_pass", password);
-            map.Add("save", "on");
-            byte[] data = EncodeValues(map);
+            string postString = String.Format("user_login={0}&user_pass={1}&save=on", user, password);
+            Encoding encoding = Encoding.GetEncoding("Windows-1251");
+            byte[] data = encoding.GetBytes(postString);
             using (HttpWebResponse response = this._Request(URL_LOGIN, "POST", data))
             {
                 if (response.StatusCode != HttpStatusCode.OK)
@@ -307,7 +286,6 @@ namespace DiaryInfo
             {
                 response = (HttpWebResponse)await request.GetResponseAsync();
                 request = null;
-                this._BugFix_CookieDomain(this._cookies);
             }
             finally {
                 _mutex.Release();
@@ -329,16 +307,35 @@ namespace DiaryInfo
                 if (response.StatusCode != HttpStatusCode.OK)
                     throw new WebException(response.StatusDescription);
             }
-            Dictionary<string, string> map = new Dictionary<string, string>();
-            //NameValueCollection map = new NameValueCollection();
-            map.Add("user_login", user);
-            map.Add("user_pass", password);
-            map.Add("save", "on");
-            byte[] data = EncodeValues(map);
+            string postString = String.Format("user_login={0}&user_pass={1}&save=on", user, password);
+            Encoding encoding = Encoding.GetEncoding("Windows-1251");
+            byte[] data = encoding.GetBytes(postString);
             using (HttpWebResponse response = await this._RequestAsync(URL_LOGIN, "POST", data).ConfigureAwait(false))
             {
                 if (response.StatusCode != HttpStatusCode.OK)
                     throw new WebException(response.StatusDescription);
+            }
+        }
+
+        /// <summary>
+        /// Secure Auth to Diary.Ru site.
+        /// </summary>
+        /// <param name="user">User name, login</param>
+        /// <param name="password">password</param>
+        public async Task AuthSecureAsync(string user, System.Security.SecureString password)
+        {
+            this._cookies = new CookieContainer();
+            using (password)
+            {
+                string pass = new NetworkCredential(string.Empty, password).Password;
+                string postString = String.Format("user_login={0}&user_pass={1}&save=on",user, pass);
+                Encoding encoding = Encoding.GetEncoding("Windows-1251");
+                byte[] data = encoding.GetBytes(postString);
+                using (HttpWebResponse response = await this._RequestAsync(URL_LOGIN, "POST", data).ConfigureAwait(false))
+                {
+                    if (response.StatusCode != HttpStatusCode.OK)
+                        throw new WebException(response.StatusDescription);
+                }
             }
         }
 
@@ -363,6 +360,71 @@ namespace DiaryInfo
                     }
                 }
             }
+        }
+        #endregion
+
+        #region Coockie Serialisation And Deserialisation
+        private static void SerializeCookies(Stream stream, CookieCollection cookies, Uri address)
+        {
+            DataContractSerializer formatter = new DataContractSerializer(typeof(List<Cookie>));
+            List<Cookie> cookieList = new List<Cookie>();
+            for (var enumerator = cookies.GetEnumerator(); enumerator.MoveNext(); )
+            {
+                var cookie = enumerator.Current as Cookie;
+                if (cookie == null) continue;
+                cookieList.Add(cookie);
+            }
+            formatter.WriteObject(stream, cookieList);
+        }
+
+        private static CookieContainer DeserializeCookies(Stream stream, Uri uri)
+        {
+            List<Cookie> cookies = new List<Cookie>();
+            CookieContainer container = new CookieContainer();
+            DataContractSerializer formatter = new DataContractSerializer(typeof(List<Cookie>));
+            cookies = (List<Cookie>)formatter.ReadObject(stream);
+            CookieCollection cookieco = new CookieCollection();
+            foreach (Cookie cookie in cookies)
+            {
+                cookieco.Add(cookie);
+            }
+            container.Add(uri, cookieco);
+            return container;
+        }
+
+        public bool SaveCookies()
+        {
+            try
+            {
+                using (FileStream fs = File.Create(DiaryRuClient.CookiesFileName))
+                {
+                    DiaryRuClient.SerializeCookies(fs, this._cookies.GetCookies(_diaryuri), _diaryuri);
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+
+        public bool LoadCookies()
+        {
+            if (!File.Exists(DiaryRuClient.CookiesFileName))
+                return false;
+            try
+            {
+                using (FileStream fs = File.Open(DiaryRuClient.CookiesFileName, FileMode.Open))
+                {
+                    this._cookies = DiaryRuClient.DeserializeCookies(fs, _diaryuri);
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+
         }
         #endregion
     }
