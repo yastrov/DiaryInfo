@@ -18,8 +18,14 @@ namespace DiaryInfo
             this.versionLabel.Content = AssemblyVersion;
             this.copyrightLabel.Content = AssemblyCopyright;
             this.companyLabel.Content = AssemblyCompany;
-            
-           this.Owner = Application.Current.MainWindow;
+            try
+            {
+                this.Owner = Application.Current.MainWindow;
+            }
+            catch (Exception)
+            {//We have no Show() Main Window before.
+                ;
+            }
         }
 
         static Hyperlink CreateHyperLink(string linkURL, string linkName=null)
