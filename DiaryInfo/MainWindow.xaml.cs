@@ -21,7 +21,7 @@ namespace DiaryInfo
         private Timer myTimer = null;
         private Icon defaultIcon = DiaryInfo.Properties.Resources.MainIcon;
         private Icon attentionIcon = DiaryInfo.Properties.Resources.InfoIcon;
-        private const int BALOON_TIP_SHOW_DELAY = 3 * 1000;
+        private const int BALOON_TIP_SHOW_DELAY = 2 * 1000;
         private const int SECUNDS_FROM_MILI_MULTIPLIER = 1000;
         private static string DefaultTrayTitle = "DiaryInfo";
         private static string CANT_DECODE_RESPONSE = "Can't decode response from remote server.";
@@ -29,11 +29,8 @@ namespace DiaryInfo
         public MainWindow()
         {
             InitializeComponent();
-        }
-
-        protected override void OnSourceInitialized(EventArgs e)
-        {
-            base.OnSourceInitialized(e);
+            /*Attention!
+            It may be only here, because you have problem with Hide(), Task and Black Wndow! */
             createTrayIcon();
             myTimer = new Timer();
             myTimer.Tick += new EventHandler(TimerEventProcessor);
@@ -42,6 +39,18 @@ namespace DiaryInfo
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("Author: Yuri Astrov").Append("Version: ").Append(typeof(MainWindow).Assembly.GetName().Version.ToString());
             AuthorLabel.Content = sb.ToString();
+            if (this.client.LoadCookies())
+            {
+                Hide();
+                myTimer.Interval = 300 * SECUNDS_FROM_MILI_MULTIPLIER;
+                Task _task = DoRequestAsync();
+                myTimer.Start();
+            }
+        }
+
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
         }
 
         #region TrayIcon
@@ -70,7 +79,7 @@ namespace DiaryInfo
                 {*/
                     MethodInfo mi = typeof(NotifyIcon).GetMethod("ShowContextMenu", BindingFlags.Instance | BindingFlags.NonPublic);
                     mi.Invoke(trayIcon, null);
-                    Activate();
+                    //Activate();
                 //}
             };
             // Add menu to tray icon and show it.
@@ -186,15 +195,27 @@ namespace DiaryInfo
         }
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
+            if (SaveCookiesCheckBox.IsChecked == true)
+            {
+                if (!this.client.SaveCookies())
+                    ;
+                //System.Windows.MessageBox.Show("Failed to save cookies!", MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error); ;
+            }
+            else
+            {
+                if (System.IO.File.Exists(DiaryRuClient.CookiesFileName))
+                    System.IO.File.Delete(DiaryRuClient.CookiesFileName);
+            }
             base.OnClosing(e);
             trayIcon.Visible = false;
         }
 
         private async void OkButtonClick(object sender, EventArgs e)
         {
+            this.Hide();
             try
             {
-                await this.client.AuthAsync(usernameTextBox.Text, passTextBox.Password);
+                await this.client.AuthSecureAsync(usernameTextBox.Text, passTextBox.SecurePassword);
                 await DoRequestAsync();
                 if (timeoutTextBox.Text.Equals("300"))
                     myTimer.Interval = 300000;
@@ -213,21 +234,23 @@ namespace DiaryInfo
                     }
                     catch (FormatException)
                     {
+                        this.Show();
                         System.Windows.MessageBox.Show("Timeout value is not valid number!", MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                     catch (OverflowException)
                     {
+                        this.Show();
                         System.Windows.MessageBox.Show("Timeout value is very big!", MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
                 myTimer.Start();
-                this.Hide();
             }
             catch (WebException ex) {
                 StringBuilder sb = new StringBuilder();
                 sb.Append("Application is disabled. You can Authorize from menu in system tray, or exit from application.")
                 .Append("\n").Append(ex.Message);
                 System.Windows.MessageBox.Show(sb.ToString());
+                this.Show();
             }  
         }
         private void ExitButtonClick(object sender, EventArgs e)
@@ -282,6 +305,7 @@ namespace DiaryInfo
                     {
                         System.Windows.MessageBox.Show(sdata, MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
                         SetDefaultIcon(sdata);
+                        this.OnAuthClick(null, null);
                     }
                     else
                     {

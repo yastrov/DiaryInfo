@@ -1,7 +1,7 @@
 ﻿<Window x:Class="DiaryInfo.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="DiaryInfo" Height="330" Width="304"
+        Title="DiaryInfo" Height="350" Width="304"
         WindowStartupLocation="CenterScreen" Icon="images/MainIcon.ico">
     <Window.Resources>
         <Style x:Key="MyFontStyle">
@@ -57,6 +57,7 @@
                 <Label Content="Timer (secunds)" Grid.Row="2" Grid.Column="0"/>
                 <TextBox Name="timeoutTextBox" Text="300" Grid.Row="2" Grid.Column="1" TabIndex="2"/>
             </Grid>
+            <CheckBox Name="SaveCookiesCheckBox" IsChecked="True" HorizontalAlignment="Right">Save cookies to disk</CheckBox>
             <DockPanel Width="Auto">
                 <Button Content="Ok" Click="OkButtonClick" TabIndex="3"/>
                 <Button Content="Exit" DockPanel.Dock="Right" HorizontalAlignment="Right" Click="ExitButtonClick" TabIndex="4"/>
