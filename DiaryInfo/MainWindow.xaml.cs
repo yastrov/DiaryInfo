@@ -16,14 +16,14 @@ namespace DiaryInfo
     /// </summary>
     public partial class MainWindow : Window
     {
+        private DiaryInfoSettings settings = new DiaryInfoSettings();
         private NotifyIcon trayIcon = null;
         private System.Windows.Forms.ContextMenu trayMenu = null;
-        private DiaryRuClient client = null;
+        private DiaryRuClient client = new DiaryRuClient();
         private Timer myTimer = null;
         private Icon defaultIcon = DiaryInfo.Properties.Resources.MainIcon;
         private Icon attentionIcon = DiaryInfo.Properties.Resources.InfoIcon;
         private const int BALOON_TIP_SHOW_DELAY = 2 * 1000;
-        private int INIT_TIMER_VALUE = 300000; // 300 (sec) * 1000 (multiplier)
         private static string DefaultTrayTitle = "DiaryInfo";
         private static string CANT_DECODE_RESPONSE = "Can't decode response from remote server.";
 
@@ -35,7 +35,8 @@ namespace DiaryInfo
             createTrayIcon();
             myTimer = new Timer();
             myTimer.Tick += new EventHandler(TimerEventProcessor);
-            client = new DiaryRuClient();
+            SaveCookiesCheckBox.IsChecked = settings.SaveCookiesToDisk;
+            client.Timeout = settings.TimeoutForWebRequest;
             usernameTextBox.Focus();
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("Author: Yuri Astrov").Append("Version: ").Append(typeof(MainWindow).Assembly.GetName().Version.ToString());
@@ -43,7 +44,7 @@ namespace DiaryInfo
             if (this.client.LoadCookies())
             {
                 Hide();
-                myTimer.Interval = INIT_TIMER_VALUE;
+                myTimer.Interval = settings.TimerForRequest;
                 Task _task = DoRequestAsync();
                 myTimer.Start();
             }
@@ -198,6 +199,8 @@ namespace DiaryInfo
         }
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
+            settings.SaveCookiesToDisk = (bool)SaveCookiesCheckBox.IsChecked;
+            settings.Save();
             if (SaveCookiesCheckBox.IsChecked == true)
             {
                 if (!this.client.SaveCookies())
@@ -316,17 +319,23 @@ namespace DiaryInfo
             comboboxData.Add("45 minute", 2600000);
             comboboxData.Add("1 hour",    3400000);
             timeoutComboBox.ItemsSource = comboboxData;
-            timeoutComboBox.SelectedIndex = 2;
+            SetTimeoutComboboxByValue(settings.TimerForRequest);
         }
 
         private int GetTimeFromTimeoutComboBox()
         {
             KeyValuePair<string, int> item = (KeyValuePair<string, int>)timeoutComboBox.SelectedItem;
+            settings.TimerForRequest = item.Value;
             return item.Value;
         }
 
         private void SetTimeoutComboboxByValue(int value)
         {
+            if (value == 300000)
+            {
+                timeoutComboBox.SelectedIndex = 1;
+                return;
+            }
             int i = -1;
             foreach(KeyValuePair<string, int> val in comboboxData)
             { 
