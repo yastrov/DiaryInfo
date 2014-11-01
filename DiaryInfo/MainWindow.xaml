@@ -55,7 +55,15 @@
                 <Label Content="Password" Grid.Row="1" Grid.Column="0"/>
                 <PasswordBox Name="passTextBox" Grid.Row="1" Grid.Column="1" TabIndex="1" Style="{DynamicResource MyGridPasswordBox}"/>
                 <Label Content="Timer (secunds)" Grid.Row="2" Grid.Column="0"/>
-                <TextBox Name="timeoutTextBox" Text="300" Grid.Row="2" Grid.Column="1" TabIndex="2"/>
+                <ComboBox Name="timeoutComboBox" Grid.Row="2" Grid.Column="1" TabIndex="2" Loaded="timeoutComboBox_Loaded"
+                          Margin="5,2,5,2"
+                          HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Path=Key}"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
             </Grid>
             <CheckBox Name="SaveCookiesCheckBox" IsChecked="True" HorizontalAlignment="Right">Save cookies to disk</CheckBox>
             <DockPanel Width="Auto">

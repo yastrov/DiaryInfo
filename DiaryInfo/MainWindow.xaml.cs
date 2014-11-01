@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using System.Drawing;
 using System.Reflection;
 using System.Net;
+using System.Collections.Generic;
 
 namespace DiaryInfo
 {
@@ -22,7 +23,7 @@ namespace DiaryInfo
         private Icon defaultIcon = DiaryInfo.Properties.Resources.MainIcon;
         private Icon attentionIcon = DiaryInfo.Properties.Resources.InfoIcon;
         private const int BALOON_TIP_SHOW_DELAY = 2 * 1000;
-        private const int SECUNDS_FROM_MILI_MULTIPLIER = 1000;
+        private int INIT_TIMER_VALUE = 300000; // 300 (sec) * 1000 (multiplier)
         private static string DefaultTrayTitle = "DiaryInfo";
         private static string CANT_DECODE_RESPONSE = "Can't decode response from remote server.";
 
@@ -42,10 +43,12 @@ namespace DiaryInfo
             if (this.client.LoadCookies())
             {
                 Hide();
-                myTimer.Interval = 300 * SECUNDS_FROM_MILI_MULTIPLIER;
+                myTimer.Interval = INIT_TIMER_VALUE;
                 Task _task = DoRequestAsync();
                 myTimer.Start();
             }
+            else
+                this.Focus();
         }
 
         protected override void OnSourceInitialized(EventArgs e)
@@ -217,32 +220,7 @@ namespace DiaryInfo
             {
                 await this.client.AuthSecureAsync(usernameTextBox.Text, passTextBox.SecurePassword);
                 await DoRequestAsync();
-                if (timeoutTextBox.Text.Equals("300"))
-                    myTimer.Interval = 300000;
-                else
-                {
-                    try
-                    {
-                        int timeout = 0;
-                        timeout = Convert.ToInt32(timeoutTextBox.Text);
-                        if (timeout < 0) {
-                            System.Windows.MessageBox.Show("Timeout value must be bigger than 0!", MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error);
-                            return;
-                        }
-                        else
-                            myTimer.Interval = timeout * SECUNDS_FROM_MILI_MULTIPLIER;
-                    }
-                    catch (FormatException)
-                    {
-                        this.Show();
-                        System.Windows.MessageBox.Show("Timeout value is not valid number!", MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                    catch (OverflowException)
-                    {
-                        this.Show();
-                        System.Windows.MessageBox.Show("Timeout value is very big!", MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                }
+                myTimer.Interval = GetTimeFromTimeoutComboBox();
                 myTimer.Start();
             }
             catch (WebException ex) {
@@ -261,29 +239,12 @@ namespace DiaryInfo
 
         private void TimerButtonClick(object sender, EventArgs e)
         {
-            try
-            {
-                int timeout = 0;
-                timeout = Convert.ToInt32(timeoutTextBox.Text);
-                if (timeout < 0)
-                {
-                    System.Windows.MessageBox.Show("Timeout value must be bigger than 0!", MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-                else
-                    myTimer.Interval = timeout * SECUNDS_FROM_MILI_MULTIPLIER;
-            }
-            catch (FormatException)
-            {
-                System.Windows.MessageBox.Show("Timeout value is not valid number!", MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            catch (OverflowException)
-            {
-                System.Windows.MessageBox.Show("Timeout value is very big!", MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            myTimer.Interval = GetTimeFromTimeoutComboBox();
+            myTimer.Start();
         }
         #endregion
 
+        #region Do request to service
         /// <summary>
         /// Do request with DiaryRu Client
         /// </summary>
@@ -336,5 +297,47 @@ namespace DiaryInfo
                 this.Close();
             }
         }
+        #endregion
+
+        #region Combobox
+        Dictionary<string, int> comboboxData = new Dictionary<string, int>();
+
+        private void timeoutComboBox_Loaded(object sender, RoutedEventArgs e)
+        {
+            comboboxData.Add("1 minute",    60000);
+            comboboxData.Add("5 minute",   300000);
+            comboboxData.Add("10 minute",  600000);
+            comboboxData.Add("15 minute",  800000);
+            comboboxData.Add("20 minute", 1100000);
+            comboboxData.Add("25 minute", 1400000);
+            comboboxData.Add("30 minute", 1700000);
+            comboboxData.Add("35 minute", 2000000);
+            comboboxData.Add("40 minute", 2300000);
+            comboboxData.Add("45 minute", 2600000);
+            comboboxData.Add("1 hour",    3400000);
+            timeoutComboBox.ItemsSource = comboboxData;
+            timeoutComboBox.SelectedIndex = 2;
+        }
+
+        private int GetTimeFromTimeoutComboBox()
+        {
+            KeyValuePair<string, int> item = (KeyValuePair<string, int>)timeoutComboBox.SelectedItem;
+            return item.Value;
+        }
+
+        private void SetTimeoutComboboxByValue(int value)
+        {
+            int i = -1;
+            foreach(KeyValuePair<string, int> val in comboboxData)
+            { 
+                i++;
+                if(val.Value == value)
+                {
+                    break;
+                }
+            }
+            timeoutComboBox.SelectedIndex = i;
+        }
+        #endregion
     }
 }
