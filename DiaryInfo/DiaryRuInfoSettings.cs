@@ -18,11 +18,11 @@ namespace DiaryInfo
         }
 
         [UserScopedSettingAttribute()]
-        [DefaultSettingValueAttribute("300000")]
-        public int TimerForRequest
+        [DefaultSettingValueAttribute("00:05:00")]
+        public TimeSpan TimerForRequest
         {
-            get { return (int)(this["TimerForRequest"]); }
-            set { if (value > 0) this["TimerForRequest"] = value; }
+            get { return (TimeSpan)this["TimerForRequest"]; }
+            set { if (value != TimeSpan.Zero) this["TimerForRequest"] = value; }
         }
 
         [UserScopedSettingAttribute()]
@@ -31,6 +31,14 @@ namespace DiaryInfo
         {
             get { return (int)(this["TimeoutForWebRequest"]); }
             set { if (value > 0) this["TimeoutForWebRequest"] = value; }
+        }
+
+        [UserScopedSettingAttribute()]
+        [DefaultSettingValueAttribute("2000")]
+        public int TimeoutForTrayIconBaloon
+        {
+            get { return (int)(this["TimeoutForTrayIconBaloon"]); }
+            set { if (value >= 0) this["TimeoutForTrayIconBaloon"] = value; }
         }
 
         [UserScopedSettingAttribute()]

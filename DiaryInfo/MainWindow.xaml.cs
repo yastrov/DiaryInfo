@@ -8,6 +8,7 @@ using System.Drawing;
 using System.Reflection;
 using System.Net;
 using System.Collections.Generic;
+using System.Windows.Threading;
 
 namespace DiaryInfo
 {
@@ -20,10 +21,9 @@ namespace DiaryInfo
         private NotifyIcon trayIcon = null;
         private System.Windows.Forms.ContextMenu trayMenu = null;
         private DiaryRuClient client = new DiaryRuClient();
-        private Timer myTimer = null;
+        private DispatcherTimer myTimer = new DispatcherTimer();
         private Icon defaultIcon = DiaryInfo.Properties.Resources.MainIcon;
         private Icon attentionIcon = DiaryInfo.Properties.Resources.InfoIcon;
-        private const int BALOON_TIP_SHOW_DELAY = 2 * 1000;
         private static string DefaultTrayTitle = "DiaryInfo";
         private static string CANT_DECODE_RESPONSE = "Can't decode response from remote server.";
 
@@ -33,7 +33,6 @@ namespace DiaryInfo
             /*Attention!
             It may be only here, because you have problem with Hide(), Task and Black Wndow! */
             createTrayIcon();
-            myTimer = new Timer();
             myTimer.Tick += new EventHandler(TimerEventProcessor);
             SaveCookiesCheckBox.IsChecked = settings.SaveCookiesToDisk;
             client.Timeout = settings.TimeoutForWebRequest;
@@ -106,7 +105,7 @@ namespace DiaryInfo
             if (BaloonTipText != null)
             {
                 trayIcon.BalloonTipText = BaloonTipText;
-                trayIcon.ShowBalloonTip(BALOON_TIP_SHOW_DELAY);
+                trayIcon.ShowBalloonTip(settings.TimeoutForTrayIconBaloon);
             }
         }
 
@@ -124,7 +123,7 @@ namespace DiaryInfo
             if (BaloonTipText != null)
             {
                 trayIcon.BalloonTipText = BaloonTipText;
-                trayIcon.ShowBalloonTip(BALOON_TIP_SHOW_DELAY);
+                trayIcon.ShowBalloonTip(settings.TimeoutForTrayIconBaloon);
             }
         }
         #endregion
@@ -303,41 +302,36 @@ namespace DiaryInfo
         #endregion
 
         #region Combobox
-        Dictionary<string, int> comboboxData = new Dictionary<string, int>();
+        Dictionary<string, TimeSpan> comboboxData = new Dictionary<string, TimeSpan>();
 
         private void timeoutComboBox_Loaded(object sender, RoutedEventArgs e)
         {
-            comboboxData.Add("1 minute",    60000);
-            comboboxData.Add("5 minute",   300000);
-            comboboxData.Add("10 minute",  600000);
-            comboboxData.Add("15 minute",  800000);
-            comboboxData.Add("20 minute", 1100000);
-            comboboxData.Add("25 minute", 1400000);
-            comboboxData.Add("30 minute", 1700000);
-            comboboxData.Add("35 minute", 2000000);
-            comboboxData.Add("40 minute", 2300000);
-            comboboxData.Add("45 minute", 2600000);
-            comboboxData.Add("1 hour",    3400000);
+            comboboxData.Add("1 minute", new TimeSpan(0,1,0));
+            comboboxData.Add("5 minute", new TimeSpan(0, 5, 0));
+            comboboxData.Add("10 minute", new TimeSpan(0, 10, 0));
+            comboboxData.Add("15 minute", new TimeSpan(0, 15, 0));
+            comboboxData.Add("20 minute", new TimeSpan(0, 20, 0));
+            comboboxData.Add("25 minute", new TimeSpan(0, 25, 0));
+            comboboxData.Add("30 minute", new TimeSpan(0, 30, 0));
+            comboboxData.Add("35 minute", new TimeSpan(0, 35, 0));
+            comboboxData.Add("40 minute", new TimeSpan(0, 40, 0));
+            comboboxData.Add("45 minute", new TimeSpan(0, 45, 0));
+            comboboxData.Add("1 hour", new TimeSpan(1, 0, 0));
             timeoutComboBox.ItemsSource = comboboxData;
             SetTimeoutComboboxByValue(settings.TimerForRequest);
         }
 
-        private int GetTimeFromTimeoutComboBox()
+        private TimeSpan GetTimeFromTimeoutComboBox()
         {
-            KeyValuePair<string, int> item = (KeyValuePair<string, int>)timeoutComboBox.SelectedItem;
+            KeyValuePair<string, TimeSpan> item = (KeyValuePair<string, TimeSpan>)timeoutComboBox.SelectedItem;
             settings.TimerForRequest = item.Value;
             return item.Value;
         }
 
-        private void SetTimeoutComboboxByValue(int value)
+        private void SetTimeoutComboboxByValue(TimeSpan value)
         {
-            if (value == 300000)
-            {
-                timeoutComboBox.SelectedIndex = 1;
-                return;
-            }
             int i = -1;
-            foreach(KeyValuePair<string, int> val in comboboxData)
+            foreach(KeyValuePair<string, TimeSpan> val in comboboxData)
             { 
                 i++;
                 if(val.Value == value)
