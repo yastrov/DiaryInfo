@@ -4,17 +4,10 @@
         Title="DiaryInfo" Height="350" Width="304"
         WindowStartupLocation="CenterScreen" Icon="images/MainIcon.ico">
     <Window.Resources>
-        <Style x:Key="MyFontStyle">
-            <Setter Property="Control.FontFamily" Value="Calibri"></Setter>
-            <Setter Property="Control.FontSize" Value="18"></Setter>
-            <Setter Property="Control.FontWeight" Value="Bold"></Setter>
-            <Setter Property="Control.Padding" Value="5"></Setter>
-            <Setter Property="Control.Margin" Value="5"></Setter>
+        <Style x:Key="localBaseControlStyle"  BasedOn="{StaticResource baseControlStyle}">
+            <Setter Property="Control.HorizontalContentAlignment" Value="Center"/>
         </Style>
-        <Style x:Key="MyGridPasswordBox" TargetType="{x:Type PasswordBox}">
-            <Setter Property="Margin" Value="5,2,5,2"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Style x:Key="myGridPasswordBoxStyle" TargetType="{x:Type PasswordBox}" BasedOn="{StaticResource localBaseControlStyle}">
             <Setter Property="Width" Value="120"/>
         </Style>
         <Style TargetType="{x:Type Button}">
@@ -23,9 +16,9 @@
             <Setter Property="Padding" Value="5,5" />
         </Style>
     </Window.Resources>
-    <Grid Style="{StaticResource MyFontStyle}" Height="Auto" Width="273">
+    <Grid Style="{StaticResource myFontStyle}" Height="Auto" Width="273">
         <StackPanel HorizontalAlignment="Center" Height="auto" VerticalAlignment="Top" Width="auto" Orientation="Vertical">
-            <Label Content="DiaryInfo" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <Label Content="DiaryInfo"  Style="{StaticResource mainTitleLabel}"/>
             <Grid HorizontalAlignment="Center">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"></RowDefinition>
@@ -37,27 +30,24 @@
                     <ColumnDefinition Width="Auto"></ColumnDefinition>
                 </Grid.ColumnDefinitions>
                 <Grid.Resources>
-                    <Style TargetType="{x:Type Label}">
-                        <Setter Property="Margin" Value="5,2,5,2"/>
-                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                    <Style TargetType="{x:Type Label}" BasedOn="{StaticResource localBaseControlStyle}">
                         <Setter Property="HorizontalContentAlignment" Value="Left"/>
                     </Style>
-                    <Style TargetType="{x:Type TextBox}">
-                        <Setter Property="Margin" Value="5,2,5,2"/>
-                        <Setter Property="VerticalContentAlignment" Value="Center"/>
-                        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                    <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource localBaseControlStyle}">
                         <Setter Property="Width" Value="120"/>
                         <Setter Property="TextWrapping" Value="Wrap"/>
+                    </Style>
+                    <Style TargetType="ComboBox" BasedOn="{StaticResource localBaseControlStyle}">
+                    </Style>
+                    <Style TargetType="PasswordBox" BasedOn="{StaticResource myGridPasswordBoxStyle}">
                     </Style>
                 </Grid.Resources>
                 <Label Content="Username" Grid.Row="0" Grid.Column="0"/>
                 <TextBox Name="usernameTextBox" Grid.Row="0" Grid.Column="1" Text="" TabIndex="0"/>
                 <Label Content="Password" Grid.Row="1" Grid.Column="0"/>
-                <PasswordBox Name="passTextBox" Grid.Row="1" Grid.Column="1" TabIndex="1" Style="{DynamicResource MyGridPasswordBox}"/>
-                <Label Content="Timer (secunds)" Grid.Row="2" Grid.Column="0"/>
-                <ComboBox Name="timeoutComboBox" Grid.Row="2" Grid.Column="1" TabIndex="2" Loaded="timeoutComboBox_Loaded"
-                          Margin="5,2,5,2"
-                          HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                <PasswordBox Name="passTextBox" Grid.Row="1" Grid.Column="1" TabIndex="1"/>
+                <Label Content="Timer" Grid.Row="2" Grid.Column="0"/>
+                <ComboBox Name="timeoutComboBox" Grid.Row="2" Grid.Column="1" TabIndex="2" Loaded="timeoutComboBox_Loaded">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding Path=Key}"/>

@@ -4,20 +4,16 @@
         Title="About DiaryInfo" Height="288" MinWidth="300" Icon="images/MainIcon.ico"
         WindowStartupLocation="CenterScreen" SizeToContent="Height" ResizeMode="CanResizeWithGrip" Width="333">
     <Window.Resources>
-        <Style x:Key="MyFontStyle">
-            <Setter Property="Control.FontFamily" Value="Calibri"></Setter>
-            <Setter Property="Control.FontSize" Value="18"></Setter>
-            <Setter Property="Control.FontWeight" Value="Bold"></Setter>
-            <Setter Property="Control.Padding" Value="5"></Setter>
-            <Setter Property="Control.Margin" Value="5"></Setter>
-        </Style>
         <Style TargetType="{x:Type Button}">
             <Setter Property="MinWidth" Value="100"/>
             <Setter Property="Margin" Value="2,5"/>
             <Setter Property="Padding" Value="5,5" />
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
     </Window.Resources>
-    <Grid Style="{StaticResource MyFontStyle}" HorizontalAlignment="Center" Height="Auto" VerticalAlignment="Top" Width="auto">
+    <Grid Style="{DynamicResource myFontStyle}" HorizontalAlignment="Center" Height="Auto" VerticalAlignment="Top" Width="auto">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"></RowDefinition>
             <RowDefinition Height="Auto"></RowDefinition>
@@ -33,13 +29,11 @@
             <ColumnDefinition Width="Auto"></ColumnDefinition>
         </Grid.ColumnDefinitions>
         <Grid.Resources>
-            <Style TargetType="{x:Type Label}">
-                <Setter Property="Margin" Value="5,2,5,2"/>
-                <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Style TargetType="{x:Type Label}" BasedOn="{StaticResource baseControlStyle}">
                 <Setter Property="HorizontalContentAlignment" Value="Left"/>
             </Style>
         </Grid.Resources>
-        <Label Content="DiaryInfo" Grid.Row="0" Grid.ColumnSpan="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <Label Content="DiaryInfo" Grid.Row="0" Grid.ColumnSpan="2" Style="{StaticResource mainTitleLabel}"/>
         <Label Content="Product Name" Grid.Row="1" Grid.Column="0"/>
         <Label Content="Version" Grid.Row="2" Grid.Column="0"/>
         <Label Content="Copyright" Grid.Row="3" Grid.Column="0"/>
@@ -68,7 +62,6 @@
                 Powered by WPF technology.
             </TextBlock>
         </ScrollViewer>
-        <Button Grid.Row="7" Grid.ColumnSpan="2" Content="Close" Click="CloseButtonClick" HorizontalAlignment="Center"
-                    HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+        <Button Grid.Row="7" Grid.ColumnSpan="2" Content="Close" Click="CloseButtonClick"/>
     </Grid>
 </Window>
