@@ -73,17 +73,11 @@ namespace DiaryInfo
             trayIcon = new NotifyIcon();
             trayIcon.Click += delegate(object sender, EventArgs e)
             {
-                /*if ((e as System.Windows.Forms.MouseEventArgs).Button == System.Windows.Forms.MouseButtons.Left)
+                if ((e as System.Windows.Forms.MouseEventArgs).Button == System.Windows.Forms.MouseButtons.Left)
                 {
                     MethodInfo mi = typeof(NotifyIcon).GetMethod("ShowContextMenu", BindingFlags.Instance | BindingFlags.NonPublic);
                     mi.Invoke(trayIcon, null);
                 }
-                else
-                {*/
-                    MethodInfo mi = typeof(NotifyIcon).GetMethod("ShowContextMenu", BindingFlags.Instance | BindingFlags.NonPublic);
-                    mi.Invoke(trayIcon, null);
-                    //Activate();
-                //}
             };
             // Add menu to tray icon and show it.
             trayIcon.ContextMenu = trayMenu;
