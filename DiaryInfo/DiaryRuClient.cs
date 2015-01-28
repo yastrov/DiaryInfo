@@ -12,6 +12,7 @@ namespace DiaryInfo
 {
     // Classes for JSON parsing.
     // Many classes for future.
+    #region JSON represent as classes
     [DataContract]
     public class NewComments
     {
@@ -124,7 +125,7 @@ namespace DiaryInfo
             return false;
         }
     }
-
+    #endregion
     /// <summary>
     /// Author Yuri Astrov <yuriastrov@gmail.com>
     /// </summary>
