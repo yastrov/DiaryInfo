@@ -26,10 +26,14 @@ namespace DiaryInfo
         private Icon attentionIcon = DiaryInfo.Properties.Resources.InfoIcon;
         private static string DefaultTrayTitle = "DiaryInfo";
         private static string CANT_DECODE_RESPONSE = "Can't decode response from remote server.";
+        private Boolean isAuthenticate = false;
 
         public MainWindow()
         {
             InitializeComponent();
+#if DEBUG
+            System.Windows.MessageBox.Show("DEBUG MODE!", DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Information);
+#endif
             /*Attention!
             It may be only here, because you have problem with Hide(), Task and Black Wndow! */
             createTrayIcon();
@@ -37,11 +41,10 @@ namespace DiaryInfo
             SaveCookiesCheckBox.IsChecked = settings.SaveCookiesToDisk;
             client.Timeout = settings.TimeoutForWebRequest;
             usernameTextBox.Focus();
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine("Author: Yuri Astrov").Append("Version: ").Append(typeof(MainWindow).Assembly.GetName().Version.ToString());
-            AuthorLabel.Content = sb.ToString();
+            AuthorLabel.Content = Helper.MyStringJoin("Author: Yuri Astrov ", "Version: ", AssemblyInfoHelper.AssemblyVersion);
             if (this.client.LoadCookies())
             {
+                isAuthenticate = true;
                 Hide();
                 myTimer.Interval = settings.TimerForRequest;
                 Task _task = DoRequestAsync();
@@ -125,40 +128,19 @@ namespace DiaryInfo
         public void OnReadFavoriteClick(object sender, EventArgs e)
         {
             SetDefaultIcon();
-            try
-            {
-                Process.Start("http://diary.ru/?favorite");
-            }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show(ex.Message, MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            Helper.OpenUrlInBrowserOrShowException("http://diary.ru/?favorite");
         }
 
         public void OnReadUmailsClick(object sender, EventArgs e)
         {
             SetDefaultIcon();
-            try
-            {
-                Process.Start("http://www.diary.ru/u-mail/");
-            }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show(ex.Message, MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            Helper.OpenUrlInBrowserOrShowException("http://www.diary.ru/u-mail/");
         }
 
         public void OnReadCommentsClick(object sender, EventArgs e)
         {
             SetDefaultIcon();
-            try
-            {
-                Process.Start("http://www.diary.ru/");
-            }
-            catch (Exception ex)
-            {
-                System.Windows.MessageBox.Show(ex.Message, MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            Helper.OpenUrlInBrowserOrShowException("http://www.diary.ru/");
         }
 
         public async void OnCheckManuallyClick(object sender, EventArgs e)
@@ -194,16 +176,15 @@ namespace DiaryInfo
         {
             settings.SaveCookiesToDisk = (bool)SaveCookiesCheckBox.IsChecked;
             settings.Save();
-            if (SaveCookiesCheckBox.IsChecked == true)
+            bool flag = SaveCookiesCheckBox.IsChecked ?? false;
+            if (flag && isAuthenticate)
             {
                 if (!this.client.SaveCookies())
-                    ;
-                //System.Windows.MessageBox.Show("Failed to save cookies!", MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error); ;
+                    System.Windows.MessageBox.Show("Failed to save cookies!", MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error); ;
             }
             else
             {
-                if (System.IO.File.Exists(DiaryRuClient.CookiesFileName))
-                    System.IO.File.Delete(DiaryRuClient.CookiesFileName);
+                removeCookies();
             }
             base.OnClosing(e);
             trayIcon.Visible = false;
@@ -211,21 +192,23 @@ namespace DiaryInfo
 
         private async void OkButtonClick(object sender, EventArgs e)
         {
+            isAuthenticate = false;
             this.Hide();
             try
             {
                 await this.client.AuthSecureAsync(usernameTextBox.Text, passTextBox.SecurePassword);
+                isAuthenticate = true;
                 await DoRequestAsync();
                 myTimer.Interval = GetTimeFromTimeoutComboBox();
                 myTimer.Start();
             }
-            catch (WebException ex) {
-                StringBuilder sb = new StringBuilder();
-                sb.Append("Application is disabled. You can Authorize from menu in system tray, or exit from application.")
-                .Append("\n").Append(ex.Message);
-                System.Windows.MessageBox.Show(sb.ToString());
+            catch (WebException ex)
+            {
+                var s = Helper.MyStringJoin("Application is disabled. You can Authorize from menu in system tray, or exit from application.",
+                    "\n", ex.Message);
+                System.Windows.MessageBox.Show(s);
                 this.Show();
-            }  
+            }
         }
         private void ExitButtonClick(object sender, EventArgs e)
         {
@@ -239,6 +222,12 @@ namespace DiaryInfo
             myTimer.Start();
         }
         #endregion
+
+        private void removeCookies()
+        {
+            if (System.IO.File.Exists(DiaryRuClient.CookiesFileName))
+                System.IO.File.Delete(DiaryRuClient.CookiesFileName);
+        }
 
         #region Do request to service
         /// <summary>
@@ -262,7 +251,12 @@ namespace DiaryInfo
                     {
                         System.Windows.MessageBox.Show(sdata, MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
                         SetDefaultIcon(sdata);
-                        this.OnAuthClick(null, null);
+                        if (data.Error.Contains("Для гостя"))
+                        {
+                            isAuthenticate = false;
+                            removeCookies();
+                            this.OnAuthClick(null, null);
+                        }
                     }
                     else
                     {
@@ -300,7 +294,7 @@ namespace DiaryInfo
 
         private void timeoutComboBox_Loaded(object sender, RoutedEventArgs e)
         {
-            comboboxData.Add("1 minute", new TimeSpan(0,1,0));
+            comboboxData.Add("1 minute", new TimeSpan(0, 1, 0));
             comboboxData.Add("5 minute", new TimeSpan(0, 5, 0));
             comboboxData.Add("10 minute", new TimeSpan(0, 10, 0));
             comboboxData.Add("15 minute", new TimeSpan(0, 15, 0));
@@ -325,10 +319,10 @@ namespace DiaryInfo
         private void SetTimeoutComboboxByValue(TimeSpan value)
         {
             int i = -1;
-            foreach(KeyValuePair<string, TimeSpan> val in comboboxData)
-            { 
+            foreach (KeyValuePair<string, TimeSpan> val in comboboxData)
+            {
                 i++;
-                if(val.Value == value)
+                if (val.Value == value)
                 {
                     break;
                 }

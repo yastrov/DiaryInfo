@@ -62,6 +62,9 @@
                 Powered by WPF technology.
             </TextBlock>
         </ScrollViewer>
-        <Button Grid.Row="7" Grid.ColumnSpan="2" Content="Close" Click="CloseButtonClick"/>
+
+        <Button Content="Check version" Click="checkVersionButtonClick" HorizontalAlignment="Left" Grid.Row="7" Grid.ColumnSpan="2"/>
+        <Button Content="Close" Click="CloseButtonClick" HorizontalAlignment="Right" Grid.Row="7" Grid.ColumnSpan="2"/>
+
     </Grid>
 </Window>
