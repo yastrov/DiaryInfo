@@ -174,7 +174,7 @@ namespace DiaryInfo
         }
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
-            settings.SaveCookiesToDisk = (bool)SaveCookiesCheckBox.IsChecked;
+            settings.SaveCookiesToDisk = SaveCookiesCheckBox.IsChecked ?? false;
             settings.Save();
             bool flag = SaveCookiesCheckBox.IsChecked ?? false;
             if (flag && isAuthenticate)
