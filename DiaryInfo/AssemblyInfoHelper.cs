@@ -14,7 +14,7 @@ namespace DiaryInfo
                 if (attributes.Length > 0)
                 {
                     AssemblyTitleAttribute titleAttribute = (AssemblyTitleAttribute)attributes[0];
-                    if (titleAttribute.Title != "")
+                    if (!string.IsNullOrEmpty( titleAttribute.Title))
                     {
                         return titleAttribute.Title;
                     }
@@ -38,7 +38,7 @@ namespace DiaryInfo
                 object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyDescriptionAttribute), false);
                 if (attributes.Length == 0)
                 {
-                    return "";
+                    return string.Empty;
                 }
                 return ((AssemblyDescriptionAttribute)attributes[0]).Description;
             }
@@ -51,7 +51,7 @@ namespace DiaryInfo
                 object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyProductAttribute), false);
                 if (attributes.Length == 0)
                 {
-                    return "";
+                    return string.Empty;
                 }
                 return ((AssemblyProductAttribute)attributes[0]).Product;
             }
@@ -64,7 +64,7 @@ namespace DiaryInfo
                 object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyCopyrightAttribute), false);
                 if (attributes.Length == 0)
                 {
-                    return "";
+                    return string.Empty;
                 }
                 return ((AssemblyCopyrightAttribute)attributes[0]).Copyright;
             }
@@ -77,7 +77,7 @@ namespace DiaryInfo
                 object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyCompanyAttribute), false);
                 if (attributes.Length == 0)
                 {
-                    return "";
+                    return string.Empty;
                 }
                 return ((AssemblyCompanyAttribute)attributes[0]).Company;
             }
