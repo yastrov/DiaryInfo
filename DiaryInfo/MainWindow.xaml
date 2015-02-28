@@ -60,7 +60,7 @@
                     </ComboBox.ItemTemplate>-->
                 </ComboBox>
             </Grid>
-            <CheckBox Name="SaveCookiesCheckBox" IsChecked="True" HorizontalAlignment="Right">Save cookies to disk</CheckBox>
+            <CheckBox IsChecked="{Binding IsCookiesSavedFlag, Mode=TwoWay}" HorizontalAlignment="Right">Save cookies to disk</CheckBox>
             <DockPanel Width="Auto">
                 <Button Content="Ok" Click="OkButtonClick" TabIndex="3"/>
                 <Button Content="Exit" DockPanel.Dock="Right" HorizontalAlignment="Right" Click="ExitButtonClick" TabIndex="4"/>

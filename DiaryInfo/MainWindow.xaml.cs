@@ -51,6 +51,18 @@ namespace DiaryInfo
             set { ; }
         }
         #endregion
+        #region Cookies checkbox saved fields
+        private bool _isCookiesSavedFlag;
+        public bool IsCookiesSavedFlag
+        {
+            get { return _isCookiesSavedFlag; }
+            set
+            {
+                _isCookiesSavedFlag = value;
+                NotifyPropertyChanged("IsCookiesSavedFlag");
+            }
+        }
+        #endregion
 
         public MainWindow()
         {
@@ -64,7 +76,7 @@ namespace DiaryInfo
             CreateTimeSpanCollection();
             LoginName = settings.UserName;
             myTimer.Tick += new EventHandler(TimerEventProcessor);
-            SaveCookiesCheckBox.IsChecked = settings.SaveCookiesToDisk;
+            IsCookiesSavedFlag = settings.SaveCookiesToDisk;
             client.Timeout = settings.TimeoutForWebRequest;
             usernameTextBox.Focus();
             if (this.client.LoadCookies())
@@ -246,11 +258,11 @@ namespace DiaryInfo
         private void ProcessSettingsWhileProgrammClosing()
         {
             settings.TimerForRequest = CurrentTimeSpan.Interval;
-            settings.SaveCookiesToDisk = SaveCookiesCheckBox.IsChecked ?? false;
+            settings.SaveCookiesToDisk = IsCookiesSavedFlag;
+            //settings.SaveCookiesToDisk = SaveCookiesCheckBox.IsChecked ?? false;
             settings.UserName = LoginName;
             settings.Save();
-            bool flag = SaveCookiesCheckBox.IsChecked ?? false;
-            if (flag && isAuthenticate)
+            if (IsCookiesSavedFlag && isAuthenticate)
             {
                 if (!this.client.SaveCookies())
                     System.Windows.MessageBox.Show("Failed to save cookies!", MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error); ;
