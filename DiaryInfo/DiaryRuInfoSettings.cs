@@ -47,5 +47,13 @@ namespace DiaryInfo
             get { return (bool)(this["SaveCookiesToDisk"]); }
             set { this["SaveCookiesToDisk"] = value; }
         }
+
+        [UserScopedSettingAttribute()]
+        [DefaultSettingValueAttribute("")]
+        public string UserName
+        {
+            get { return (string)(this["UserName"]); }
+            set { this["UserName"] = value; }
+        }
     }
 }
