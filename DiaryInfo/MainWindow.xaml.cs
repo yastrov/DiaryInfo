@@ -9,13 +9,15 @@ using System.Reflection;
 using System.Net;
 using System.Collections.Generic;
 using System.Windows.Threading;
+using System.ComponentModel;
+using System.Collections.ObjectModel;
 
 namespace DiaryInfo
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, INotifyPropertyChanged
     {
         private DiaryInfoSettings settings = new DiaryInfoSettings();
         private NotifyIcon trayIcon = null;
@@ -28,6 +30,28 @@ namespace DiaryInfo
         private static string CANT_DECODE_RESPONSE = "Can't decode response from remote server.";
         private Boolean isAuthenticate = false;
 
+        #region string fileds for DataBind
+        // Field for binding to Login TextBox
+        private string _loginName;
+        public string LoginName
+        {
+            get { return _loginName; }
+            set
+            {
+                _loginName = value;
+                NotifyPropertyChanged("LoginName");
+            }
+        }
+        public string VersionString
+        {
+            get
+            {
+                return Helper.MyStringJoin("Author: Yuri Astrov ", "Version: ", AssemblyInfoHelper.AssemblyVersion);
+            }
+            set { ; }
+        }
+        #endregion
+
         public MainWindow()
         {
             InitializeComponent();
@@ -37,11 +61,12 @@ namespace DiaryInfo
             /*Attention!
             It may be only here, because you have problem with Hide(), Task and Black Wndow! */
             createTrayIcon();
+            CreateTimeSpanCollection();
+            LoginName = settings.UserName;
             myTimer.Tick += new EventHandler(TimerEventProcessor);
             SaveCookiesCheckBox.IsChecked = settings.SaveCookiesToDisk;
             client.Timeout = settings.TimeoutForWebRequest;
             usernameTextBox.Focus();
-            AuthorLabel.Content = Helper.MyStringJoin("Author: Yuri Astrov ", "Version: ", AssemblyInfoHelper.AssemblyVersion);
             if (this.client.LoadCookies())
             {
                 isAuthenticate = true;
@@ -174,18 +199,7 @@ namespace DiaryInfo
         }
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
-            settings.SaveCookiesToDisk = SaveCookiesCheckBox.IsChecked ?? false;
-            settings.Save();
-            bool flag = SaveCookiesCheckBox.IsChecked ?? false;
-            if (flag && isAuthenticate)
-            {
-                if (!this.client.SaveCookies())
-                    System.Windows.MessageBox.Show("Failed to save cookies!", MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error); ;
-            }
-            else
-            {
-                removeCookies();
-            }
+            ProcessSettingsWhileProgrammClosing();
             base.OnClosing(e);
             trayIcon.Visible = false;
         }
@@ -196,10 +210,11 @@ namespace DiaryInfo
             this.Hide();
             try
             {
-                await this.client.AuthSecureAsync(usernameTextBox.Text, passTextBox.SecurePassword);
+                await this.client.AuthSecureAsync(LoginName.Trim(), passTextBox.SecurePassword);
                 isAuthenticate = true;
                 await DoRequestAsync();
-                myTimer.Interval = GetTimeFromTimeoutComboBox();
+                myTimer.Interval = CurrentTimeSpan.Interval;
+                settings.TimerForRequest = CurrentTimeSpan.Interval;
                 myTimer.Start();
             }
             catch (WebException ex)
@@ -218,16 +233,39 @@ namespace DiaryInfo
 
         private void TimerButtonClick(object sender, EventArgs e)
         {
-            myTimer.Interval = GetTimeFromTimeoutComboBox();
+            myTimer.Interval = CurrentTimeSpan.Interval;
+            settings.TimerForRequest = CurrentTimeSpan.Interval;
             myTimer.Start();
         }
         #endregion
 
+        #region Closing Helpers (Cookies Settings)
+        /// <summary>
+        /// Process settings while Programm Closing
+        /// </summary>
+        private void ProcessSettingsWhileProgrammClosing()
+        {
+            settings.TimerForRequest = CurrentTimeSpan.Interval;
+            settings.SaveCookiesToDisk = SaveCookiesCheckBox.IsChecked ?? false;
+            settings.UserName = LoginName;
+            settings.Save();
+            bool flag = SaveCookiesCheckBox.IsChecked ?? false;
+            if (flag && isAuthenticate)
+            {
+                if (!this.client.SaveCookies())
+                    System.Windows.MessageBox.Show("Failed to save cookies!", MainWindow.DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Error); ;
+            }
+            else
+            {
+                removeCookies();
+            }
+        }
         private void removeCookies()
         {
             if (System.IO.File.Exists(DiaryRuClient.CookiesFileName))
                 System.IO.File.Delete(DiaryRuClient.CookiesFileName);
         }
+        #endregion
 
         #region Do request to service
         /// <summary>
@@ -290,44 +328,62 @@ namespace DiaryInfo
         #endregion
 
         #region Combobox
-        Dictionary<string, TimeSpan> comboboxData = new Dictionary<string, TimeSpan>();
-
-        private void timeoutComboBox_Loaded(object sender, RoutedEventArgs e)
+        private ObservableCollection<TimeSpanViewModel> _timeSpanCollection = null;
+        public ObservableCollection<TimeSpanViewModel> TimeSpanCollection
         {
-            comboboxData.Add("1 minute", new TimeSpan(0, 1, 0));
-            comboboxData.Add("5 minute", new TimeSpan(0, 5, 0));
-            comboboxData.Add("10 minute", new TimeSpan(0, 10, 0));
-            comboboxData.Add("15 minute", new TimeSpan(0, 15, 0));
-            comboboxData.Add("20 minute", new TimeSpan(0, 20, 0));
-            comboboxData.Add("25 minute", new TimeSpan(0, 25, 0));
-            comboboxData.Add("30 minute", new TimeSpan(0, 30, 0));
-            comboboxData.Add("35 minute", new TimeSpan(0, 35, 0));
-            comboboxData.Add("40 minute", new TimeSpan(0, 40, 0));
-            comboboxData.Add("45 minute", new TimeSpan(0, 45, 0));
-            comboboxData.Add("1 hour", new TimeSpan(1, 0, 0));
-            timeoutComboBox.ItemsSource = comboboxData;
-            SetTimeoutComboboxByValue(settings.TimerForRequest);
-        }
-
-        private TimeSpan GetTimeFromTimeoutComboBox()
-        {
-            KeyValuePair<string, TimeSpan> item = (KeyValuePair<string, TimeSpan>)timeoutComboBox.SelectedItem;
-            settings.TimerForRequest = item.Value;
-            return item.Value;
-        }
-
-        private void SetTimeoutComboboxByValue(TimeSpan value)
-        {
-            int i = -1;
-            foreach (KeyValuePair<string, TimeSpan> val in comboboxData)
+            get { return _timeSpanCollection; }
+            set
             {
-                i++;
-                if (val.Value == value)
+                _timeSpanCollection = value;
+                NotifyPropertyChanged("TimeSpanCollection");
+            }
+        }
+
+        private TimeSpanViewModel _currentTimeSpan;
+        public TimeSpanViewModel CurrentTimeSpan
+        {
+            get { return _currentTimeSpan; }
+            set
+            {
+                _currentTimeSpan = value;
+                NotifyPropertyChanged("CurrentTimeSpan");
+            }
+        }
+        private void CreateTimeSpanCollection()
+        {
+            ObservableCollection<TimeSpanViewModel> tsc = new ObservableCollection<TimeSpanViewModel>();
+            tsc.Add(new TimeSpanViewModel("1 minute", new TimeSpan(0, 1, 0)));
+            tsc.Add(new TimeSpanViewModel("5 minute", new TimeSpan(0, 5, 0)));
+            tsc.Add(new TimeSpanViewModel("10 minute", new TimeSpan(0, 10, 0)));
+            tsc.Add(new TimeSpanViewModel("15 minute", new TimeSpan(0, 15, 0)));
+            tsc.Add(new TimeSpanViewModel("20 minute", new TimeSpan(0, 20, 0)));
+            tsc.Add(new TimeSpanViewModel("25 minute", new TimeSpan(0, 25, 0)));
+            tsc.Add(new TimeSpanViewModel("30 minute", new TimeSpan(0, 30, 0)));
+            tsc.Add(new TimeSpanViewModel("35 minute", new TimeSpan(0, 35, 0)));
+            tsc.Add(new TimeSpanViewModel("40 minute", new TimeSpan(0, 40, 0)));
+            tsc.Add(new TimeSpanViewModel("45 minute", new TimeSpan(0, 45, 0)));
+            tsc.Add(new TimeSpanViewModel("1 hour", new TimeSpan(1, 0, 0)));
+
+            foreach (var item in tsc)
+            {
+                if (item.CompareTo(settings.TimerForRequest) == 0)
                 {
+                    CurrentTimeSpan = item;
+                    TimeSpanCollection = tsc;
                     break;
                 }
             }
-            timeoutComboBox.SelectedIndex = i;
+        }
+        #endregion
+        
+        #region INotifyPropertyChanged
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void NotifyPropertyChanged(String propertyName)
+        {
+            if (PropertyChanged != null)
+            {
+                PropertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
+            }
         }
         #endregion
     }
