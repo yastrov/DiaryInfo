@@ -9,13 +9,31 @@ namespace DiaryInfo
     /// </summary>
     public partial class AboutWindow : Window
     {
+        public string ProductName
+        {
+            get { return AssemblyInfoHelper.AssemblyProduct; }
+            set { ; }
+        }
+        public string ProductVersion
+        {
+            get { return AssemblyInfoHelper.AssemblyVersion; }
+            set { ; }
+        }
+        public string ProductCopyright
+        {
+            get { return AssemblyInfoHelper.AssemblyCopyright.Replace("Copyright ", String.Empty); ; }
+            set { ; }
+        }
+
+        public string Company
+        {
+            get { return AssemblyInfoHelper.AssemblyCompany; }
+            set { ; }
+        }
+
         public AboutWindow()
         {
             InitializeComponent();
-            this.productNameLabel.Content = AssemblyInfoHelper.AssemblyProduct;
-            this.versionLabel.Content = AssemblyInfoHelper.AssemblyVersion;
-            this.copyrightLabel.Content = AssemblyInfoHelper.AssemblyCopyright.Replace("Copyright ", String.Empty);
-            this.companyLabel.Content = AssemblyInfoHelper.AssemblyCompany;
             try
             {
                 this.Owner = Application.Current.MainWindow;
