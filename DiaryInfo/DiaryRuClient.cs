@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 using System.Net;
 using System.IO;
@@ -7,6 +6,7 @@ using System.Runtime.Serialization.Json;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace DiaryInfo
 {
@@ -365,6 +365,7 @@ namespace DiaryInfo
         #endregion
 
         #region Coockie Serialisation And Deserialisation
+#if STORE_PLAIN_COOKIE  
         private static void SerializeCookies(Stream stream, CookieCollection cookies, Uri address)
         {
             DataContractSerializer formatter = new DataContractSerializer(typeof(List<Cookie>));
@@ -392,19 +393,25 @@ namespace DiaryInfo
             container.Add(uri, cookieco);
             return container;
         }
-
+#endif
+        
         public bool SaveCookies()
         {
             try
             {
                 using (FileStream fs = File.Create(DiaryRuClient.CookiesFileName))
                 {
+                    #if STORE_PLAIN_COOKIE 
                     DiaryRuClient.SerializeCookies(fs, this._cookies.GetCookies(_diaryuri), _diaryuri);
+#else
+                    CryptographyHelper.EncryptStream(fs, this._cookies, new BinaryFormatter());
+#endif
                     return true;
                 }
             }
             catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine(ex.ToString());
                 return false;
             }
         }
@@ -417,15 +424,19 @@ namespace DiaryInfo
             {
                 using (FileStream fs = File.Open(DiaryRuClient.CookiesFileName, FileMode.Open))
                 {
+#if STORE_PLAIN_COOKIE 
                     this._cookies = DiaryRuClient.DeserializeCookies(fs, _diaryuri);
+#else
+                    this._cookies = CryptographyHelper.DecryptStream<CookieContainer>(fs, new BinaryFormatter());
+#endif
                     return true;
                 }
             }
             catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine(ex.ToString());
                 return false;
             }
-
         }
         #endregion
     }
