@@ -70,6 +70,7 @@ namespace DiaryInfo
 #if DEBUG
             System.Windows.MessageBox.Show("DEBUG MODE!", DefaultTrayTitle, MessageBoxButton.OK, MessageBoxImage.Information);
 #endif
+            UpgradeSettingsIfNeed();
             /*Attention!
             It may be only here, because you have problem with Hide(), Task and Black Wndow! */
             createTrayIcon();
@@ -395,6 +396,32 @@ namespace DiaryInfo
             if (PropertyChanged != null)
             {
                 PropertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(propertyName));
+            }
+        }
+        #endregion
+
+        #region settings
+        /// <summary>
+        /// Upgrade settings from previous version, if that need.
+        /// </summary>
+        private void UpgradeSettingsIfNeed()
+        {
+            if (settings.UpgradeRequired)
+            {
+                try
+                {
+                    settings.Upgrade();
+                }
+                catch (System.Configuration.ConfigurationException ex)
+                {
+                    /*It's not bad, we really don't need to do in this case.
+                     * May previous config does not exist.*/
+                    ;
+                }
+                finally
+                {
+                    settings.UpgradeRequired = false;
+                }
             }
         }
         #endregion

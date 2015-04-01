@@ -55,5 +55,13 @@ namespace DiaryInfo
             get { return (string)(this["UserName"]); }
             set { this["UserName"] = value; }
         }
+
+        [UserScopedSettingAttribute()]
+        [DefaultSettingValueAttribute("true")]
+        public bool UpgradeRequired
+        {
+            get { return (bool)(this["UpgradeRequired"]); }
+            set { this["UpgradeRequired"] = value; }
+        }
     }
 }
