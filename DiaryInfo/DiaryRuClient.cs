@@ -101,9 +101,14 @@ namespace DiaryInfo
             if (this.Error != null)
                 return this.Error;
             StringBuilder str = new StringBuilder();
+            if(this.UserInfo.UserName.Length > 10)
+            {
+                str.Append(this.UserInfo.UserName.Substring(0, 9)).Append("…");
+            }
+            else
             str.Append(this.UserInfo.UserName);
             if (this.NewComments.Count > 0)
-                str.Append("\n").Append("NewComments: ").Append(this.NewComments.Count);
+                str.Append("\n").Append("Comments: ").Append(this.NewComments.Count);
             if (this.Discuss.Count > 0)
                 str.Append("\n").Append("Discuss: ").Append(this.Discuss.Count);
             if(this.Umails.Count > 0)
