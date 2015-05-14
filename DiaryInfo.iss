@@ -8,8 +8,10 @@
 ; - Icons
 ; - Check .NET Framework (method from internet)
 ; - Install .NET Framework if it not exists
+; - Set default dir from script
+; - Prev Installations Options
 #define MyAppName "DiaryInfo" 
-#define MyAppVersion GetFileVersion("DiaryInfo.exe")
+#define MyAppVersion GetFileVersion("C:\Users\%UserName%\Documents\Atlassian\DiaryInfo\DiaryInfo\bin\x86\Release\DiaryInfo.exe")
 ;"2.5.2.0" 
 #define MyAppPublisher "Yuriy Astrov" 
 #define MyAppURL "https://github.com/yastrov/DiaryInfo"
@@ -18,37 +20,55 @@
 #define MyDistFolder "C:\Users\%UserName%\Documents\Atlassian\DiaryInfo"  
 
 [Setup]
+;GUID no needed really
+AppId={{AFEF5AE0-F8A5-4A4E-AFAD-FFCF6DD60526}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 DefaultGroupName={#MyAppName}
-OutputBaseFilename={#MyAppName}{#MyAppVersion}
 DefaultDirName={pf}\{#MyAppName}
-;SetupIconFile={#MyDistFolder}DiaryInfo/images/MainIcon.ico
+;DefaultDirName={code:GetDefaultDir}
 
-ArchitecturesInstallIn64BitMode=x64  
-Compression=bzip
+;About App
 AppVerName={#MyAppName} version {#MyAppVersion}
-AllowNoIcons=yes
 AppCopyright=Copyright (C) {#MyAppPublisher}
 AppPublisher={#MyAppPublisher} 
 AppPublisherURL={#MyAppURL}
 AppUpdatesURL={#MyAppUpdatedUrl}
 
-Uninstallable=not IsTaskSelected('portablemode')
-UninstallDisplayIcon={app}\{#MyAppExeName}
-UninstallFilesDir={app}\uninst
+;Config Installator
+VersionInfoVersion=0.0.0.0
+VersionInfoDescription=Notifier for http://www.diary.ru
+VersionInfoCopyright={#MyAppPublisher}
+VersionInfoProductVersion={#MyAppVersion}
+
+AllowNoIcons=yes
+;SetupIconFile={#MyDistFolder}DiaryInfo/images/MainIcon.ico
+OutputBaseFilename={#MyAppName}{#MyAppVersion}
+ArchitecturesInstallIn64BitMode=x64  
+Compression=bzip
 ;Win7, because .NET 4.5 needed
 MinVersion=6.1.7600
 
+;Previous installation
+UsePreviousAppDir=yes 
+UsePreviousGroup=yes
+UsePreviousSetupType=yes
+UsePreviousTasks=yes
+
+;Uninstaller
+Uninstallable=not IsTaskSelected('portablemode')
+UninstallDisplayIcon={app}\{#MyAppExeName}
+UninstallFilesDir={app}\uninst
+
 [Tasks]
-Name: autorunmode; Description: "{cm:CreateAutorunM}"
-Name: desktopicon; Description: "{cm:CreateDesktopIconM}"; GroupDescription: "{cm:AdditionalIconsGroupM}"; Flags: unchecked
-Name: desktopicon\common; Description: "{cm:ForAllUsersM}"; GroupDescription: "{cm:AdditionalIconsGroupM}";Flags: exclusive
-Name: desktopicon\user; Description: "{cm:CurrentUsersOnlyM}"; GroupDescription: "{cm:AdditionalIconsGroupM}"; Flags: exclusive unchecked
-Name: quicklaunchicon; Description: "{cm:QuickLaunchIconM}"; GroupDescription: "{cm:AdditionalIconsGroupM}"; Flags: unchecked
-Name: portablemode; Description: "{cm:PortableModeM}"
+Name: "autorunmode"; Description: "{cm:CreateAutorunM}"
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "desktopicon\common"; Description: "{cm:ForAllUsersM}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: exclusive
+Name: "desktopicon\user"; Description: "{cm:CurrentUsersOnlyM}"; GroupDescription: "{cm:AdditionalIconsGroupM}"; Flags: exclusive unchecked
+Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIconsGroupM}"; Flags: unchecked
+Name: "portablemode"; Description: "{cm:PortableModeM}"; Flags: unchecked
 ;Name: pathappend; Description: "{cm:PathAppendM}"
-Name: writeinstalledpath; Description: "{cm:WriteInstalledPathM}"
+Name: "writeinstalledpath"; Description: "{cm:WriteInstalledPathM}"
 
 [Registry]
 Root: HKCU; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#MyAppName}"; ValueData: """{app}\{#MyAppExeName}"""; Flags: uninsdeletevalue; Tasks: autorunmode
@@ -63,7 +83,7 @@ Source: "dotNetFx40_Full_setup.exe"; DestDir: {tmp}; Flags: deleteafterinstall; 
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"
-Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
+Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{userdesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon\user
 Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon\common
 Name: "{userstartup}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: quicklaunchicon
@@ -73,36 +93,51 @@ Name: "en"; MessagesFile: "compiler:Default.isl"
 Name: "ru"; MessagesFile: "compiler:Languages\Russian.isl"
 
 [CustomMessages]
+;Some messages from language file
 en.CreateAutorunM=Autorun while windows starting
 ru.CreateAutorunM=Запускать при старте системы
-en.CreateDesktopIconM=Create a &desktop icon
-ru.CreateDesktopIconM=Создать иконку на рабочем столе
 en.PortableModeM=Portable Mode
-ru.PortableModeM=Портативный режим
-en.AdditionalIconsGroupM=Additional icons:
-ru.AdditionalIconsGroupM=Дополнительные иконки и ярлыки:
+ru.PortableModeM=Портативная установка
 en.ForAllUsersM=For all users
 ru.ForAllUsersM=Для всех пользователей
 en.CurrentUsersOnlyM=For the current user only
 ru.CurrentUsersOnlyM=Только для текущего пользователя
-en.QuickLaunchIconM=Create a &Quick Launch icon
-ru.QuickLaunchIconM=Создать иконку быстрого запуска
 en.RequiresM=requires
 ru.RequiresM=нуждается в
 en.InstAttemptM=The installer will attempt to install it
-ru.InstAttemptM=The installer will attempt to install it
+ru.InstAttemptM=Программа установки попытается установить
 en.FrameworkInstalled=Microsoft Framework 4.5 is beïng installed. Please wait...
 ru.FrameworkInstalled=Microsoft Framework 4.5 Устанавливается. Пожалуйста, подождите...
 en.PathAppendM=Append PATH
 ru.PathAppendM=Добавить папку в PATH
 en.WriteInstalledPathM=Write path to registry
 ru.WriteInstalledPathM=Записать путь установки в ресстр системы
+en.RunAfterM=Run application after installation
+ru.RunAfterM=Запустить приложение после установки
 
+;Delete before install
+[InstallDelete]
+Type: filesandordirs; Name: "{app}"
+
+;Uninstaller
 [UninstallDelete]
 Type: files; Name: "{%username}\DiaryInfoCookies.data"
 Type: filesandordirs; Name: "{%localappdata}\{#MyAppName}"
 
 [CODE]
+//function GetDefaultDir(def: string): string;
+//var
+//    sTemp : string;
+//begin
+//    if Is64BitInstallMode then
+//    begin
+//        sTemp := ExpandConstant('{pf64}') + '{#MyAppName}';
+//    else
+//        sTemp := ExpandConstant('{pf32}') + '{#MyAppName}';
+//    end;
+//    Result := sTemp;
+//end;
+
 // http://www.codeproject.com/Tips/506096/InnoSetup-with-NET-installer-x-x-sample
 function IsDotNetDetected(version: string; service: cardinal): boolean;
 // Indicates whether the specified version and service pack of the .NET Framework is installed.
@@ -174,4 +209,5 @@ begin
 end; 
 
 [Run]
-Filename: {tmp}\dotNetFx40_Full_setup.exe; Parameters: "/q:a /c:""install /l /q"""; Check: not IsRequiredDotNetDetected; StatusMsg: {cm:FrameworkInstalled} 
+Filename: {tmp}\dotNetFx40_Full_setup.exe; Parameters: "/q:a /c:""install /l /q"""; Check: not IsRequiredDotNetDetected; StatusMsg: {cm:FrameworkInstalled}
+FileName: "{#MyAppExeName}"; WorkingDir: "{app}"; Description: "{cm:RunAfterM}"; Flags: postinstall nowait skipifsilent
