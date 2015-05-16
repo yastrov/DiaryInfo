@@ -43,7 +43,7 @@ VersionInfoProductVersion={#MyAppVersion}
 
 AllowNoIcons=yes
 ;SetupIconFile={#MyDistFolder}DiaryInfo/images/MainIcon.ico
-OutputBaseFilename={#MyAppName}{#MyAppVersion}
+OutputBaseFilename={#MyAppName}_{#MyAppVersion}
 ArchitecturesInstallIn64BitMode=x64  
 Compression=bzip
 ;Win7, because .NET 4.5 needed
@@ -64,8 +64,8 @@ UninstallFilesDir={app}\uninst
 Name: "autorunmode"; Description: "{cm:CreateAutorunM}"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 Name: "desktopicon\common"; Description: "{cm:ForAllUsersM}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: exclusive
-Name: "desktopicon\user"; Description: "{cm:CurrentUsersOnlyM}"; GroupDescription: "{cm:AdditionalIconsGroupM}"; Flags: exclusive unchecked
-Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIconsGroupM}"; Flags: unchecked
+Name: "desktopicon\user"; Description: "{cm:CurrentUsersOnlyM}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: exclusive unchecked
+Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 Name: "portablemode"; Description: "{cm:PortableModeM}"; Flags: unchecked
 ;Name: pathappend; Description: "{cm:PathAppendM}"
 Name: "writeinstalledpath"; Description: "{cm:WriteInstalledPathM}"
@@ -105,7 +105,7 @@ ru.CurrentUsersOnlyM=Только для текущего пользовател
 en.RequiresM=requires
 ru.RequiresM=нуждается в
 en.InstAttemptM=The installer will attempt to install it
-ru.InstAttemptM=Программа установки попытается установить
+ru.InstAttemptM=Программа установки попытается установить его
 en.FrameworkInstalled=Microsoft Framework 4.5 is beïng installed. Please wait...
 ru.FrameworkInstalled=Microsoft Framework 4.5 Устанавливается. Пожалуйста, подождите...
 en.PathAppendM=Append PATH
@@ -114,6 +114,8 @@ en.WriteInstalledPathM=Write path to registry
 ru.WriteInstalledPathM=Записать путь установки в ресстр системы
 en.RunAfterM=Run application after installation
 ru.RunAfterM=Запустить приложение после установки
+en.AlreadyRunning="Application currently running. Close it, please, and press OK."
+ru.AlreadyRunning="Приложение ещё запущено. Закройте его и нажмите ОК."
 
 ;Delete before install
 [InstallDelete]
@@ -124,7 +126,7 @@ Type: filesandordirs; Name: "{app}"
 Type: files; Name: "{%username}\DiaryInfoCookies.data"
 Type: filesandordirs; Name: "{%localappdata}\{#MyAppName}"
 
-[CODE]
+[Code]
 //function GetDefaultDir(def: string): string;
 //var
 //    sTemp : string;
@@ -199,14 +201,40 @@ begin
 end;
 
 function InitializeSetup(): Boolean;
+var
+  myS :string;
 begin
     if not IsDotNetDetected('v4\Full', 0) then begin
-        MsgBox('{#MyAppName} {cm:RequiresM} Microsoft .NET Framework 4.5.'#13#13
-          '{cm:InstAttemptM}', mbInformation, MB_OK);        
+        myS:= ExpandConstant('{#MyAppName} {cm:RequiresM} Microsoft .NET Framework 4.5.'#13#13
+          '{cm:InstAttemptM}');
+        MsgBox(myS, mbInformation, MB_OK);        
     end;
     
     result := true;
 end; 
+
+function InitializeUninstall(): Boolean;
+var
+    clsW, title, myS :string;
+    myHwnd :HWND;
+    f1 :Integer;
+begin
+    clsW:='HwndWrapper[DiaryInfo.exe;;afdf3545-d495-4a16-a5dd-dc64f0433545]';
+    title:='{#MyAppName}'
+    myHwnd := FindWindowByClassName(clsW);
+    if myHwnd = 0 then
+      myHwnd := FindWindowByWindowName(title);
+    if myHwnd <> 0 then
+      begin
+      myS := ExpandConstant('{cm:AlreadyRunning}');
+      f1 := MsgBox(s, mbInformation, MB_OK);
+      //if f1 = IDOK then
+        // Don't work at Win 7 x64
+        //PostMessage(myHwnd, 10, 0, 0); 
+        //WM_CLOSE=0x0010
+      end;
+    Result:=true;
+end;
 
 [Run]
 Filename: {tmp}\dotNetFx40_Full_setup.exe; Parameters: "/q:a /c:""install /l /q"""; Check: not IsRequiredDotNetDetected; StatusMsg: {cm:FrameworkInstalled}
