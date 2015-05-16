@@ -61,14 +61,14 @@ UninstallDisplayIcon={app}\{#MyAppExeName}
 UninstallFilesDir={app}\uninst
 
 [Tasks]
-Name: "autorunmode"; Description: "{cm:CreateAutorunM}"
+Name: "autorunmode"; Description: "{cm:CreateAutorunM}"; Flags: unchecked
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 Name: "desktopicon\common"; Description: "{cm:ForAllUsersM}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: exclusive
 Name: "desktopicon\user"; Description: "{cm:CurrentUsersOnlyM}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: exclusive unchecked
 Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 Name: "portablemode"; Description: "{cm:PortableModeM}"; Flags: unchecked
 ;Name: pathappend; Description: "{cm:PathAppendM}"
-Name: "writeinstalledpath"; Description: "{cm:WriteInstalledPathM}"
+Name: "writeinstalledpath"; Description: "{cm:WriteInstalledPathM}"; Flags: unchecked
 
 [Registry]
 Root: HKCU; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#MyAppName}"; ValueData: """{app}\{#MyAppExeName}"""; Flags: uninsdeletevalue; Tasks: autorunmode
@@ -227,7 +227,7 @@ begin
     if myHwnd <> 0 then
       begin
       myS := ExpandConstant('{cm:AlreadyRunning}');
-      f1 := MsgBox(s, mbInformation, MB_OK);
+      f1 := MsgBox(myS, mbInformation, MB_OK);
       //if f1 = IDOK then
         // Don't work at Win 7 x64
         //PostMessage(myHwnd, 10, 0, 0); 
