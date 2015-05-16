@@ -116,6 +116,8 @@ en.RunAfterM=Run application after installation
 ru.RunAfterM=Запустить приложение после установки
 en.AlreadyRunning="Application currently running. Close it, please, and press OK."
 ru.AlreadyRunning="Приложение ещё запущено. Закройте его и нажмите ОК."
+en.DeleteSettingsM=Remove settings and cookies?
+ru.DeleteSettingsM=Удалить настройки и cookies?
 
 ;Delete before install
 [InstallDelete]
@@ -123,10 +125,12 @@ Type: filesandordirs; Name: "{app}"
 
 ;Uninstaller
 [UninstallDelete]
-Type: files; Name: "{%username}\DiaryInfoCookies.data"
-Type: filesandordirs; Name: "{%localappdata}\{#MyAppName}"
+Type: files; Name: "{%username}\DiaryInfoCookies.data"; Check: DoesDeleteSettings
+Type: filesandordirs; Name: "{%localappdata}\{#MyAppName}"; Check: DoesDeleteSettings
 
 [Code]
+var
+  deleteCHBox : Boolean;
 //function GetDefaultDir(def: string): string;
 //var
 //    sTemp : string;
@@ -200,6 +204,23 @@ begin
     result := IsDotNetDetected('v4\Full', 0);
 end;
 
+function DoesDeleteSettings(): Boolean;
+begin
+  Result:= deleteCHBox;
+end;
+
+procedure TakeAnswerToDelete;
+var
+  answer : Integer;
+  myS : String;
+begin
+  deleteCHBox:=false;
+  myS := ExpandConstant('{cm:DeleteSettingsM}');
+  answer := MsgBox(myS, mbInformation, MB_YESNO);
+  if answer = IDYES then
+    deleteCHBox:=true;
+end;
+
 function InitializeSetup(): Boolean;
 var
   myS :string;
@@ -233,6 +254,7 @@ begin
         //PostMessage(myHwnd, 10, 0, 0); 
         //WM_CLOSE=0x0010
       end;
+    TakeAnswerToDelete;
     Result:=true;
 end;
 
