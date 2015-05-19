@@ -10,14 +10,24 @@
 ; - Install .NET Framework if it not exists
 ; - Set default dir from script
 ; - Prev Installations Options
-#define MyAppName "DiaryInfo" 
-#define MyAppVersion GetFileVersion("C:\Users\%UserName%\Documents\Atlassian\DiaryInfo\DiaryInfo\bin\x86\Release\DiaryInfo.exe")
+; - Take folder from systen environment variable
+#define MyAppName "DiaryInfo"
+
+#define MyProjectName MyAppName
+; Take project folder from systen environment variable
+#define MyGitProjects "MyGitProjects"
+#if GetEnv(MyGitProjects) == ""
+#define MyDistFolder "C:\Users\"+GetEnv("UserName")+"\Documents\Atlassian\"+MyProjectName
+#else
+#define MyDistFolder AddBackslash(GetEnv(MyGitProjects)) + MyProjectName
+#endif
+
+#define MyAppVersion GetFileVersion(MyDistFolder+"\DiaryInfo\bin\x86\Release\DiaryInfo.exe")
 ;"2.5.2.0" 
 #define MyAppPublisher "Yuriy Astrov" 
-#define MyAppURL "https://github.com/yastrov/DiaryInfo"
-#define MyAppUpdatedUrl "https://github.com/yastrov/DiaryInfo/releases"
-#define MyAppExeName "DiaryInfo.exe"
-#define MyDistFolder "C:\Users\%UserName%\Documents\Atlassian\DiaryInfo"  
+#define MyAppURL "https://github.com/yastrov/" + MyProjectName
+#define MyAppUpdatedUrl MyAppURL+"/releases"
+#define MyAppExeName "DiaryInfo.exe"  
 
 [Setup]
 ;GUID no needed really
@@ -77,9 +87,9 @@ Root: HKLM; Subkey: Software\YAstrov\{#MyAppName}; ValueType: string; ValueName:
 
 [Files]
 ;Source: "CTL3DV2.DLL"; DestDir: "{sys}"; Flags: onlyifdoesntexist uninsneveruninstall
-Source: "{#MyDistFolder}\DiaryInfo\bin\x86\Release\{#MyAppExeName}"; DestDir: "{app}"; Check: Is64BitInstallMode; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "{#MyDistFolder}\DiaryInfo\bin\x64\Release\{#MyAppExeName}"; DestDir: "{app}"; Check: not Is64BitInstallMode; Flags: ignoreversion recursesubdirs createallsubdirs 
-Source: "dotNetFx40_Full_setup.exe"; DestDir: {tmp}; Flags: deleteafterinstall; Check: not IsRequiredDotNetDetected 
+Source: "{#MyDistFolder}\DiaryInfo\bin\x86\Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion createallsubdirs recursesubdirs; Check: Is64BitInstallMode
+Source: "{#MyDistFolder}\DiaryInfo\bin\x64\Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion; Check: not Is64BitInstallMode
+Source: "dotNetFx40_Full_setup.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall; Check: not IsRequiredDotNetDetected
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"
@@ -127,6 +137,7 @@ Type: filesandordirs; Name: "{app}"
 [UninstallDelete]
 Type: files; Name: "{%username}\DiaryInfoCookies.data"; Check: DoesDeleteSettings
 Type: filesandordirs; Name: "{%localappdata}\{#MyAppName}"; Check: DoesDeleteSettings
+Type: filesandordirs; Name: "{app}";
 
 [Code]
 var
@@ -260,4 +271,4 @@ end;
 
 [Run]
 Filename: {tmp}\dotNetFx40_Full_setup.exe; Parameters: "/q:a /c:""install /l /q"""; Check: not IsRequiredDotNetDetected; StatusMsg: {cm:FrameworkInstalled}
-FileName: "{#MyAppExeName}"; WorkingDir: "{app}"; Description: "{cm:RunAfterM}"; Flags: postinstall nowait skipifsilent
+FileName: "{app}\{#MyAppExeName}"; Description: "{cm:RunAfterM}"; Flags: postinstall nowait skipifsilent
